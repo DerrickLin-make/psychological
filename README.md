@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MindScope
 
-## Getting Started
+面向心理咨询机构的纯前端在线测评系统。
 
-First, run the development server:
+## 开发命令
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+默认本地地址：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```txt
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 主要页面
 
-## Learn More
+- `/`
+  - 首页
+- `/scales`
+  - 量表列表页
+- `/scales/[slug]`
+  - 单份量表详情页
 
-To learn more about Next.js, take a look at the following resources:
+## 题库维护
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+量表数据在：
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/data/scales/`
 
-## Deploy on Vercel
+详细维护文档见：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `docs/scale-authoring-guide.md`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+新增量表的最短流程：
+
+1. 复制 `src/data/scales/template.ts`
+2. 新建自己的量表文件
+3. 在 `src/data/scales/index.ts` 中导入并加入 `scales`
+4. 运行 `npm run dev`、`npm run lint`、`npm run build`

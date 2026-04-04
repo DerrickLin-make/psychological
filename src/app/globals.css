@@ -1,26 +1,183 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f1e7;
+  --foreground: #2b2016;
+  --panel: rgba(255, 250, 242, 0.74);
+  --panel-border: rgba(122, 96, 69, 0.18);
+  --button-dark: #2d2117;
+  --button-dark-hover: #433122;
+  --button-light: rgba(255, 255, 255, 0.68);
+  --button-light-hover: rgba(255, 255, 255, 0.9);
+  --heading: #23170e;
+  --body-text: #4f3e2e;
+  --muted-text: #6a5540;
+  --accent: #8f6c48;
+  --accent-light: #876c4b;
+  --label: #7b6246;
+  --card-surface: rgba(255, 255, 255, 0.78);
+  --dark-surface: #261c15;
+  --dark-surface-text: #f4eadf;
+  --border-subtle: rgba(216, 204, 184, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-heading: var(--heading);
+  --color-body-text: var(--body-text);
+  --color-muted-text: var(--muted-text);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-label: var(--label);
+  --color-card-surface: var(--card-surface);
+  --color-dark-surface: var(--dark-surface);
+  --color-dark-surface-text: var(--dark-surface-text);
+  --color-border-subtle: var(--border-subtle);
+  --font-sans: var(--font-sans-sc);
+  --font-serif: var(--font-serif-sc);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans-sc), sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(215, 191, 151, 0.45), transparent 32%),
+    radial-gradient(circle at 90% 20%, rgba(170, 124, 80, 0.16), transparent 28%),
+    linear-gradient(180deg, #f9f4ec 0%, #f5eee2 48%, #f2eadf 100%);
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(159, 123, 82, 0.24);
+}
+
+.aurora {
+  position: fixed;
+  z-index: -1;
+  filter: blur(70px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.aurora-one {
+  top: -40px;
+  right: -60px;
+  height: 260px;
+  width: 260px;
+  background: rgba(203, 162, 109, 0.34);
+}
+
+.aurora-two {
+  bottom: 12%;
+  left: -50px;
+  height: 300px;
+  width: 300px;
+  background: rgba(145, 108, 74, 0.18);
+}
+
+.glass-panel {
+  position: relative;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgba(72, 49, 25, 0.08);
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.44), transparent 28%),
+    linear-gradient(320deg, rgba(255, 255, 255, 0.22), transparent 26%);
+  pointer-events: none;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(128, 102, 74, 0.22);
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #745a3d;
+}
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.primary-button {
+  background: var(--button-dark);
+  color: #f8efe5;
+  box-shadow: 0 12px 30px rgba(44, 31, 19, 0.18);
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  background: var(--button-dark-hover);
+}
+
+.secondary-button {
+  border: 1px solid rgba(132, 104, 76, 0.26);
+  background: var(--button-light);
+  color: #4d3a28;
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(132, 104, 76, 0.42);
+  background: var(--button-light-hover);
+}
+
+.report-surface {
+  background:
+    radial-gradient(circle at top left, rgba(222, 201, 169, 0.36), transparent 22%),
+    linear-gradient(180deg, #f9f2e8 0%, #f5ecdf 100%);
+}
+
+.question-card {
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease,
+    box-shadow 220ms ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.question-card:hover {
+  transform: translateY(-2px);
 }
