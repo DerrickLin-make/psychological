@@ -413,8 +413,9 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
 
             {/* ── MBTI Result ── */}
             {result.kind === "mbti" ? (
-              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-[28px] bg-[#f8efe2] p-6">
+              <>
+                <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                  <div className="rounded-[28px] bg-[#f8efe2] p-6">
                   <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">你的 MBTI 类型</p>
                   <div className="mt-5 flex items-end gap-3">
                     <p className="text-6xl font-bold tracking-wider text-[#2f2115]">{result.typeCode}</p>
@@ -468,6 +469,16 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
                   </article>
                 </div>
               </div>
+              
+              {result.typeProfile.detailedDescription && (
+                <div className="mt-5 rounded-[28px] bg-[#f8efe2]/60 p-6 sm:p-8 backdrop-blur-md">
+                  <p className="text-sm font-semibold tracking-[0.2em] text-[#92714d] uppercase mb-5">深度解析</p>
+                  <div className="space-y-4 text-sm leading-8 text-[#4a3927] whitespace-pre-wrap">
+                    {result.typeProfile.detailedDescription}
+                  </div>
+                </div>
+              )}
+            </>
             ) : null}
 
             {/* ── Profile Result (temperament & personality) ── */}
@@ -507,6 +518,34 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
                         <p className="text-sm font-semibold text-[#473422]">{dimension.band.label}</p>
                         <p className="mt-2 text-sm leading-7 text-[#614d38]">{dimension.band.summary}</p>
                       </div>
+                      {dimension.details && (
+                        <div className="mt-4 space-y-3">
+                          {dimension.details.neuralTraits && (
+                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
+                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">神经特点</p>
+                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.neuralTraits}</p>
+                            </div>
+                          )}
+                          {dimension.details.psychologicalTraits && (
+                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
+                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">心理特点</p>
+                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.psychologicalTraits}</p>
+                            </div>
+                          )}
+                          {dimension.details.typicalBehavior && (
+                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
+                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">典型表现</p>
+                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.typicalBehavior}</p>
+                            </div>
+                          )}
+                          {dimension.details.suitableCareers && (
+                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
+                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">适合职业</p>
+                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.suitableCareers}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>

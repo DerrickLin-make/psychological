@@ -24,6 +24,12 @@ export type ScaleDimension = {
   key: string;
   name: string;
   description: string;
+  details?: {
+    neuralTraits?: string;
+    psychologicalTraits?: string;
+    typicalBehavior?: string;
+    suitableCareers?: string;
+  };
   bands: DimensionBand[];
 };
 
@@ -51,6 +57,7 @@ export type MbtiTypeProfile = {
   code: string;
   nickname: string;
   summary: string;
+  detailedDescription?: string;
   suitableFields: string;
   suitableCareers: string;
 };

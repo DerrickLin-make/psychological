@@ -4,6 +4,12 @@ type ScoredDimension = {
   key: string;
   name: string;
   description: string;
+  details?: {
+    neuralTraits?: string;
+    psychologicalTraits?: string;
+    typicalBehavior?: string;
+    suitableCareers?: string;
+  };
   score: number;
   band: DimensionBand;
 };
@@ -39,6 +45,7 @@ export type MbtiScaleResult = {
     code: string;
     nickname: string;
     summary: string;
+    detailedDescription?: string;
     suitableFields: string;
     suitableCareers: string;
   };
@@ -117,6 +124,7 @@ function scoreDimension(scale: ScaleDefinition, dimension: ScaleDimension, answe
     key: dimension.key,
     name: dimension.name,
     description: dimension.description,
+    details: dimension.details,
     score,
     band,
   };
