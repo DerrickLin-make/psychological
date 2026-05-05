@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const repoName = "psychological";
-const isGithubPagesBuild = process.env.NODE_ENV === "production";
+const isGithubPagesBuild = process.env.GITHUB_PAGES === "true";
 
 const nextConfig: NextConfig = {
   output: "export",

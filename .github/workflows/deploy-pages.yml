@@ -35,6 +35,8 @@ jobs:
 
       - name: Build static export
         run: npm run build
+        env:
+          GITHUB_PAGES: "true"
 
       - name: Disable Jekyll processing
         run: New-Item -ItemType File -Path out/.nojekyll -Force

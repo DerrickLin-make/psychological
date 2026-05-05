@@ -29,6 +29,14 @@ export type ProfileScaleResult = {
   normalized: number;
   dimensions: ScoredDimension[];
   overview: string;
+  temperament?: {
+    label: string;
+    summary: string;
+    primary: ScoredDimension[];
+    secondary: ScoredDimension[];
+    intensity: "typical" | "general" | "tendency" | "unclear";
+    isMixed: boolean;
+  };
 };
 
 export type MbtiScaleResult = {
@@ -138,6 +146,52 @@ function buildProfileOverview(dimensions: ScoredDimension[]) {
   return `当前画像中更突出的维度是${strongest}；相对需要进一步结合访谈理解的是${support.name}。`;
 }
 
+function buildTemperamentResult(scale: ScaleDefinition, dimensions: ScoredDimension[]): ProfileScaleResult["temperament"] {
+  const rules = scale.temperamentRules;
+
+  if (!rules) {
+    return undefined;
+  }
+
+  const sorted = [...dimensions].sort((left, right) => right.score - left.score);
+  const highest = sorted[0];
+  const secondary = sorted.slice(1).filter((dimension) => highest.score - dimension.score <= rules.mixedDiffThreshold);
+  const isMixed = secondary.length > 0;
+
+  if (highest.score < rules.dominantThreshold) {
+    return {
+      label: "气质倾向不明显",
+      summary: `最高维度为${highest.name}（${highest.score} 分），尚未达到主要气质判定阈值，建议结合访谈继续观察。`,
+      primary: [highest],
+      secondary: [],
+      intensity: "unclear",
+      isMixed: false,
+    };
+  }
+
+  const intensity = highest.score > rules.typicalThreshold
+    ? "typical"
+    : highest.score >= 10
+      ? "general"
+      : "tendency";
+  const intensityLabel = intensity === "typical" ? "典型型" : intensity === "general" ? "一般型" : "倾向型";
+  const mixedDimensions = [highest, ...secondary];
+  const names = mixedDimensions.map((dimension) => dimension.name).join(" + ");
+  const label = isMixed ? `${intensityLabel}混合气质（${names}）` : `${intensityLabel}${highest.name}`;
+  const summary = isMixed
+    ? `${mixedDimensions.map((dimension) => `${dimension.name} ${dimension.score} 分`).join("，")}，最高维度差值不超过 ${rules.mixedDiffThreshold} 分，判定为混合气质。`
+    : `${highest.name}得分最高（${highest.score} 分），与其他维度差距达到主要气质判定要求，判定为${label}。`;
+
+  return {
+    label,
+    summary,
+    primary: [highest],
+    secondary,
+    intensity,
+    isMixed,
+  };
+}
+
 function scoreProfileScale(scale: ScaleDefinition, answers: number[]): ProfileScaleResult {
   if (!scale.dimensions?.length) {
     throw new Error(`Scale "${scale.slug}" is missing profile dimensions.`);
@@ -156,6 +210,7 @@ function scoreProfileScale(scale: ScaleDefinition, answers: number[]): ProfileSc
   const minScore = scale.questions.length * minPerQuestion;
   const range = maxScore - minScore;
   const normalized = range > 0 ? (totalScore - minScore) / range : 0;
+  const temperament = buildTemperamentResult(scale, dimensions);
 
   return {
     kind: "profile",
@@ -163,7 +218,8 @@ function scoreProfileScale(scale: ScaleDefinition, answers: number[]): ProfileSc
     maxScore,
     normalized,
     dimensions,
-    overview: buildProfileOverview(dimensions),
+    overview: temperament?.summary ?? buildProfileOverview(dimensions),
+    temperament,
   };
 }
 

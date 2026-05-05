@@ -497,9 +497,23 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
                     <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
                   </div>
                   <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                    多维画像
+                    {result.temperament?.label ?? "多维画像"}
                   </p>
                   <p className="mt-4 text-sm leading-7 text-[#5d4935]">{result.overview}</p>
+                  {result.temperament ? (
+                    <div className="mt-5 rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-[#5d4935]">
+                      <p>
+                        主要维度：
+                        {result.temperament.primary.map((dimension) => `${dimension.name} ${dimension.score} 分`).join("、")}
+                      </p>
+                      {result.temperament.secondary.length > 0 ? (
+                        <p className="mt-2">
+                          混合参考：
+                          {result.temperament.secondary.map((dimension) => `${dimension.name} ${dimension.score} 分`).join("、")}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="grid gap-4">
                   {result.dimensions.map((dimension) => (
