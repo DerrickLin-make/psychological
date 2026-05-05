@@ -1,0 +1,140 @@
+import type { ScaleDefinition } from "./types";
+import { temperamentOptions } from "./presets";
+
+export const temperamentScale: ScaleDefinition = {
+  slug: "temperament",
+  title: "气质类型测试",
+  shortTitle: "气质测试",
+  subtitle: "60 题 / 四维度气质画像",
+  category: "人格量表",
+  summary:
+    "基于经典四液说理论，从胆汁质、多血质、粘液质和抑郁质四个维度评估个体气质倾向，并提供气质类型与职业选择建议。",
+  intro:
+    "请针对每个描述，从「很符合」到「完全不符合」五个选项中选择一个最贴近自己平时稳定表现的答案。不要仅根据最近几天的情绪判断。",
+  estimatedMinutes: 15,
+  scoringNote:
+    "每题 5 级计分（+2 到 -2），60 题分属四个气质维度各 15 题，每维度分别汇总得分。得分最高者为主要气质类型，得分 >20 为典型型，10~20 为一般型。",
+  kind: "profile",
+  options: temperamentOptions,
+  temperamentRules: {
+    dominantThreshold: 4,
+    mixedDiffThreshold: 3,
+    typicalThreshold: 20,
+  },
+  questions: [
+    /* ── 粘液质 (phlegmatic): 1,7,10,13,18,22,26,30,33,39,43,45,49,55,57 ── */
+    { id: "t-1", text: "做事力求稳妥，一般不做无把握的事。", dimensionKey: "phlegmatic" },
+    /* ── 胆汁质 (choleric): 2,6,9,14,17,21,27,31,36,38,42,48,50,54,58 ── */
+    { id: "t-2", text: "遇到可气的事就怒不可遏，想把心里话全说出来才痛快。", dimensionKey: "choleric" },
+    /* ── 抑郁质 (melancholic): 3,5,12,15,20,24,28,32,35,37,41,47,51,53,59 ── */
+    { id: "t-3", text: "宁可一个人干事，不愿很多人在一起。", dimensionKey: "melancholic" },
+    /* ── 多血质 (sanguine): 4,8,11,16,19,23,25,29,34,40,44,46,52,56,60 ── */
+    { id: "t-4", text: "到一个新环境很快就能适应。", dimensionKey: "sanguine" },
+    { id: "t-5", text: "厌恶那些强烈的刺激，如尖叫、噪音、危险镜头等。", dimensionKey: "melancholic" },
+    { id: "t-6", text: "和人争吵时，总是先发制人，喜欢挑剔别人。", dimensionKey: "choleric" },
+    { id: "t-7", text: "喜欢安静的环境。", dimensionKey: "phlegmatic" },
+    { id: "t-8", text: "我善于和人交往。", dimensionKey: "sanguine" },
+    { id: "t-9", text: "羡慕那种善于克制自己感情的人。", dimensionKey: "choleric" },
+    { id: "t-10", text: "生活有规律，很少违反作息制度。", dimensionKey: "phlegmatic" },
+    { id: "t-11", text: "在多数情况下情绪是乐观的。", dimensionKey: "sanguine" },
+    { id: "t-12", text: "碰到陌生人觉得很拘束。", dimensionKey: "melancholic" },
+    { id: "t-13", text: "遇到令人气愤的事，能很好地自我克制。", dimensionKey: "phlegmatic" },
+    { id: "t-14", text: "做事总是有旺盛的精力。", dimensionKey: "choleric" },
+    { id: "t-15", text: "遇到问题总是举棋不定，优柔寡断。", dimensionKey: "melancholic" },
+    { id: "t-16", text: "在人群中从不觉得过分约束。", dimensionKey: "sanguine" },
+    { id: "t-17", text: "在情绪高昂的时候，觉得干什么都有趣；情绪低落的时候，又觉得什么都没有意思。", dimensionKey: "choleric" },
+    { id: "t-18", text: "当注意力集中于一事物时，别的事很难使我分心。", dimensionKey: "phlegmatic" },
+    { id: "t-19", text: "理解问题总比别人快。", dimensionKey: "sanguine" },
+    { id: "t-20", text: "碰到危险情境，常有一种极度恐惧感。", dimensionKey: "melancholic" },
+    { id: "t-21", text: "对学习、工作，怀有很高的热情。", dimensionKey: "choleric" },
+    { id: "t-22", text: "能够长时间做枯燥、单调的工作。", dimensionKey: "phlegmatic" },
+    { id: "t-23", text: "符合自己兴趣的事情，干起来劲头十足，否则就不想干。", dimensionKey: "sanguine" },
+    { id: "t-24", text: "一点小事就能引起情绪波动。", dimensionKey: "melancholic" },
+    { id: "t-25", text: "厌做那些需要耐心、细致的工作。", dimensionKey: "sanguine" },
+    { id: "t-26", text: "与人交往不卑不亢。", dimensionKey: "phlegmatic" },
+    { id: "t-27", text: "喜欢参加热烈的活动。", dimensionKey: "choleric" },
+    { id: "t-28", text: "爱看感情细腻、描写人物内心活动的文学作品。", dimensionKey: "melancholic" },
+    { id: "t-29", text: "工作学习时间长了，常感到厌倦。", dimensionKey: "sanguine" },
+    { id: "t-30", text: "不喜欢长时间谈论一个问题，愿意实际动手干。", dimensionKey: "phlegmatic" },
+    { id: "t-31", text: "宁愿侃侃而谈，不愿窃窃私语。", dimensionKey: "choleric" },
+    { id: "t-32", text: "别人总是说我闷闷不乐。", dimensionKey: "melancholic" },
+    { id: "t-33", text: "理解问题常比别人慢些。", dimensionKey: "phlegmatic" },
+    { id: "t-34", text: "疲倦时只要短暂的休息就能精神抖擞，出现投入工作。", dimensionKey: "sanguine" },
+    { id: "t-35", text: "心里有话宁愿自己想，不愿说出来。", dimensionKey: "melancholic" },
+    { id: "t-36", text: "认准一个目标就希望尽快实现，不达目的，誓不罢休。", dimensionKey: "choleric" },
+    { id: "t-37", text: "学习、工作同样一段时间后，常比别人更疲倦。", dimensionKey: "melancholic" },
+    { id: "t-38", text: "做事有些莽撞，常常不考虑后果。", dimensionKey: "choleric" },
+    { id: "t-39", text: "老师或他人讲授新知识、技术时，总希望他讲得慢些，多重复几遍。", dimensionKey: "phlegmatic" },
+    { id: "t-40", text: "能够很快地忘记不愉快的事情。", dimensionKey: "sanguine" },
+    { id: "t-41", text: "做作业或完成一件工作总比别人花时间多。", dimensionKey: "melancholic" },
+    { id: "t-42", text: "喜欢运动量大的剧烈体育运动，或者参加各种文艺活动。", dimensionKey: "choleric" },
+    { id: "t-43", text: "不能很快地把注意力从一件事转移到另一件事上去。", dimensionKey: "phlegmatic" },
+    { id: "t-44", text: "接受一个任务后，就希望把它迅速解决。", dimensionKey: "sanguine" },
+    { id: "t-45", text: "认为墨守成规比冒风险强些。", dimensionKey: "phlegmatic" },
+    { id: "t-46", text: "能够同时注意几件事物。", dimensionKey: "sanguine" },
+    { id: "t-47", text: "当我烦闷的时候，别人很难使我高兴起来。", dimensionKey: "melancholic" },
+    { id: "t-48", text: "爱看情节起伏、激动人心的小说。", dimensionKey: "choleric" },
+    { id: "t-49", text: "对工作抱认真严谨、始终一贯的态度。", dimensionKey: "phlegmatic" },
+    { id: "t-50", text: "和周围的人关系总是相处不好。", dimensionKey: "choleric" },
+    { id: "t-51", text: "喜欢复习学过的知识，重复做能熟练做的工作。", dimensionKey: "melancholic" },
+    { id: "t-52", text: "希望做变化大、花样多的工作。", dimensionKey: "sanguine" },
+    { id: "t-53", text: "小时候会背的诗歌，我似乎比别人记得清楚。", dimensionKey: "melancholic" },
+    { id: "t-54", text: "别人说我「出言伤人」，可我并不觉得这样。", dimensionKey: "choleric" },
+    { id: "t-55", text: "在体育活动中，常因反应慢而落后。", dimensionKey: "phlegmatic" },
+    { id: "t-56", text: "反应敏捷，头脑机智。", dimensionKey: "sanguine" },
+    { id: "t-57", text: "喜欢有条理而不甚麻烦的工作。", dimensionKey: "phlegmatic" },
+    { id: "t-58", text: "兴奋的事常使我失眠。", dimensionKey: "choleric" },
+    { id: "t-59", text: "老师讲新概念，常常听不懂，但是弄懂了以后很难忘记。", dimensionKey: "melancholic" },
+    { id: "t-60", text: "假如工作枯燥无味，马上就会情绪低落。", dimensionKey: "sanguine" },
+  ],
+  dimensions: [
+    {
+      key: "choleric",
+      name: "胆汁质",
+      description:
+        "又称不可抑制型，属于战斗类型。精力旺盛，反应敏捷，乐观大方，但性急、暴躁而缺少耐性，热情忽高忽低。",
+      bands: [
+        { min: -30, max: -1, label: "低胆汁质", summary: "该维度倾向不明显。" },
+        { min: 0, max: 9, label: "轻度胆汁质", summary: "具有一定的胆汁质特征，但不突出。" },
+        { min: 10, max: 20, label: "一般型胆汁质", summary: "具有较明显的胆汁质特征：精力旺盛、反应敏捷，但可能有些急躁。" },
+        { min: 21, max: 30, label: "典型胆汁质", summary: "高度典型的胆汁质：兴奋性强，脾气暴躁，热情而直率，适合富有挑战性的工作。" },
+      ],
+    },
+    {
+      key: "sanguine",
+      name: "多血质",
+      description:
+        "又称活泼型，属于敏捷好动的类型。适应能力强，善于交际，反应迅速而灵活，但注意力不稳定，兴趣容易转移。",
+      bands: [
+        { min: -30, max: -1, label: "低多血质", summary: "该维度倾向不明显。" },
+        { min: 0, max: 9, label: "轻度多血质", summary: "具有一定的多血质特征，但不突出。" },
+        { min: 10, max: 20, label: "一般型多血质", summary: "具有较明显的多血质特征：善于交际、反应灵活，但可能兴趣容易转移。" },
+        { min: 21, max: 30, label: "典型多血质", summary: "高度典型的多血质：活泼好动，善于社交，适应力强，适合多样化的工作。" },
+      ],
+    },
+    {
+      key: "phlegmatic",
+      name: "粘液质",
+      description:
+        "又称安静型，属于缄默而沉静的类型。踏实、稳重，兴趣持久专注，善于忍耐，但有些惰性，不够灵活。",
+      bands: [
+        { min: -30, max: -1, label: "低粘液质", summary: "该维度倾向不明显。" },
+        { min: 0, max: 9, label: "轻度粘液质", summary: "具有一定的粘液质特征，但不突出。" },
+        { min: 10, max: 20, label: "一般型粘液质", summary: "具有较明显的粘液质特征：稳重、有耐久力，但可能不够灵活。" },
+        { min: 21, max: 30, label: "典型粘液质", summary: "高度典型的粘液质：平静安详，坚持不懈，适合需要稳定和条理的工作。" },
+      ],
+    },
+    {
+      key: "melancholic",
+      name: "抑郁质",
+      description:
+        "又称易抑制型，属于敏感细腻的类型。感情丰富，做事小心谨慎，善于察觉细节，但适应能力较差，易于疲劳。",
+      bands: [
+        { min: -30, max: -1, label: "低抑郁质", summary: "该维度倾向不明显。" },
+        { min: 0, max: 9, label: "轻度抑郁质", summary: "具有一定的抑郁质特征，但不突出。" },
+        { min: 10, max: 20, label: "一般型抑郁质", summary: "具有较明显的抑郁质特征：敏感细腻、小心谨慎，但可能容易疲劳。" },
+        { min: 21, max: 30, label: "典型抑郁质", summary: "高度典型的抑郁质：感受力强，细致入微，适合要求精细的工作。" },
+      ],
+    },
+  ],
+};

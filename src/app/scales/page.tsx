@@ -30,7 +30,7 @@ export default function ScalesPage() {
               <article key={scale.slug} className="rounded-[30px] border border-[#d8ccb8] bg-white/78 p-6 shadow-[0_18px_50px_rgba(72,49,25,0.06)]">
                 <div className="flex items-center justify-between gap-4">
                   <span className="badge">{scale.category}</span>
-                  <span className="text-sm text-[#765f45]">{scale.questions.length} 题</span>
+                  <span className="text-sm text-[#765f45]">{scale.mbtiQuestions?.length ?? scale.questions.length} 题</span>
                 </div>
                 <h2 className="mt-5 font-serif text-3xl text-[#23170e]">{scale.title}</h2>
                 <p className="mt-3 text-sm leading-7 text-[#5d4935]">{scale.subtitle}</p>

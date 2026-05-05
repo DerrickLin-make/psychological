@@ -10,10 +10,15 @@ type ScaleExperienceProps = {
 };
 
 export function ScaleExperience({ scale }: ScaleExperienceProps) {
+  const isMbti = scale.kind === "mbti";
+  const questionCount = isMbti
+    ? (scale.mbtiQuestions?.length ?? 0)
+    : scale.questions.length;
+
   const [stage, setStage] = useState<"intro" | "question" | "result">("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Array<number | null>>(
-    () => Array.from({ length: scale.questions.length }, () => null),
+    () => Array.from({ length: questionCount }, () => null),
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [result, setResult] = useState<ScaleResult | null>(null);
@@ -35,14 +40,17 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
   }, [stage, currentIndex]);
 
   const answeredCount = answers.filter((answer) => answer !== null).length;
-  const progress = Math.round((answeredCount / scale.questions.length) * 100);
-  const currentQuestion = scale.questions[currentIndex];
+  const progress = Math.round((answeredCount / questionCount) * 100);
   const currentAnswer = answers[currentIndex];
+
+  // Get current question data depending on scale kind
+  const currentMbtiQuestion = isMbti ? scale.mbtiQuestions?.[currentIndex] : null;
+  const currentStandardQuestion = !isMbti ? scale.questions[currentIndex] : null;
 
   function resetFlow() {
     setStage("intro");
     setCurrentIndex(0);
-    setAnswers(Array.from({ length: scale.questions.length }, () => null));
+    setAnswers(Array.from({ length: questionCount }, () => null));
     setResult(null);
     setSaveMessage("");
     setIsTransitioning(false);
@@ -63,6 +71,14 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     setSaveMessage("");
   }
 
+  function jumpToQuestion(index: number) {
+    if (isTransitioning || index < 0 || index >= questionCount) {
+      return;
+    }
+    setCurrentIndex(index);
+    setSaveMessage("");
+  }
+
   function selectAnswer(value: number) {
     if (isTransitioning) {
       return;
@@ -79,7 +95,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     }
 
     timerRef.current = window.setTimeout(() => {
-      const isLastQuestion = currentIndex === scale.questions.length - 1;
+      const isLastQuestion = currentIndex === questionCount - 1;
 
       if (isLastQuestion) {
         const completedAnswers = nextAnswers.map((answer) => {
@@ -153,7 +169,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
           <div className="glass-panel overflow-hidden rounded-[32px] p-7 sm:p-9">
             <div className="flex flex-wrap gap-3">
               <span className="badge">{scale.category}</span>
-              <span className="badge">{scale.questions.length} 题</span>
+              <span className="badge">{questionCount} 题</span>
               <span className="badge">约 {scale.estimatedMinutes} 分钟</span>
             </div>
             <h1 className="mt-6 font-serif text-4xl leading-tight text-[#20160d] sm:text-5xl">{scale.title}</h1>
@@ -201,13 +217,45 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
       ) : null}
 
       {stage === "question" ? (
-        <section className="mx-auto w-full max-w-3xl">
+        <section className="mx-auto w-full max-w-6xl flex gap-5">
+          {/* ── Question Navigation Grid ── */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="glass-panel rounded-[24px] p-4 sticky top-6">
+              <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">题目导航</p>
+              <p className="mt-2 text-xs text-[#8a7359]">
+                已完成 {answeredCount} / {questionCount}
+              </p>
+              <div className="mt-4 grid grid-cols-6 gap-1.5">
+                {Array.from({ length: questionCount }, (_, index) => {
+                  const isAnswered = answers[index] !== null;
+                  const isCurrent = index === currentIndex;
+                  return (
+                    <button
+                      key={`nav-${index}`}
+                      onClick={() => jumpToQuestion(index)}
+                      aria-label={`跳转到第 ${index + 1} 题`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 ${
+                        isCurrent
+                          ? "bg-[#2e2217] text-[#f7efe3] ring-2 ring-[#9f7b52] ring-offset-1"
+                          : isAnswered
+                            ? "bg-[#9f7b52] text-white hover:bg-[#8a6a45]"
+                            : "bg-white/70 text-[#6b5a44] hover:bg-[#e8ddd0]"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
+          <div className="flex-1 min-w-0">
           <div className="glass-panel rounded-[30px] p-5 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">{scale.shortTitle}</p>
                 <h2 className="mt-2 font-serif text-3xl text-[#24180d]">
-                  第 {currentIndex + 1} / {scale.questions.length} 题
+                  第 {currentIndex + 1} / {questionCount} 题
                 </h2>
               </div>
               <button
@@ -233,38 +281,112 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
               />
             </div>
 
-            <div className={`question-card mt-7 rounded-[28px] bg-[#fffaf2] p-6 sm:p-8 ${isTransitioning ? "opacity-70" : ""}`}>
-              <p className="text-xs font-semibold tracking-[0.22em] text-[#92714f] uppercase">当前题目</p>
-              <p className="mt-4 text-2xl leading-10 text-[#271c12] sm:text-[2rem]">{currentQuestion.text}</p>
-            </div>
+            {/* ── MBTI binary question ── */}
+            {isMbti && currentMbtiQuestion ? (
+              <>
+                <div className={`question-card mt-7 rounded-[28px] bg-[#fffaf2] p-6 sm:p-8 ${isTransitioning ? "opacity-70" : ""}`}>
+                  <p className="text-xs font-semibold tracking-[0.22em] text-[#92714f] uppercase">
+                    {currentMbtiQuestion.text ? "请选择更符合你的一项" : "在下列词语中，哪一个更合你心意？"}
+                  </p>
+                  {currentMbtiQuestion.text ? (
+                    <p className="mt-4 text-2xl leading-10 text-[#271c12] sm:text-[2rem]">{currentMbtiQuestion.text}</p>
+                  ) : null}
+                </div>
+                <div className="mt-5 grid gap-3">
+                  {[
+                    { label: "A", text: currentMbtiQuestion.optionA, value: 0 },
+                    { label: "B", text: currentMbtiQuestion.optionB, value: 1 },
+                  ].map((option) => {
+                    const isSelected = currentAnswer === option.value;
+                    return (
+                      <button
+                        key={`${currentMbtiQuestion.id}-${option.label}`}
+                        onClick={() => selectAnswer(option.value)}
+                        disabled={isTransitioning}
+                        aria-pressed={isSelected}
+                        className={`rounded-[24px] border px-5 py-4 text-left transition duration-300 ${
+                          isSelected
+                            ? "border-[#8d6c47] bg-[#2e2217] text-[#f7efe3]"
+                            : "border-[#d8ccb8] bg-white/80 text-[#332619] hover:-translate-y-0.5 hover:border-[#9e7b55] hover:bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f0e6d8] text-sm font-bold text-[#6b5540]">
+                            {option.label}
+                          </span>
+                          <span className="text-lg">{option.text}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
 
-            <div className="mt-5 grid gap-3">
-              {scale.options.map((option) => {
-                const isSelected = currentAnswer === option.value;
+            {/* ── Standard Likert question ── */}
+            {!isMbti && currentStandardQuestion ? (
+              <>
+                <div className={`question-card mt-7 rounded-[28px] bg-[#fffaf2] p-6 sm:p-8 ${isTransitioning ? "opacity-70" : ""}`}>
+                  <p className="text-xs font-semibold tracking-[0.22em] text-[#92714f] uppercase">当前题目</p>
+                  <p className="mt-4 text-2xl leading-10 text-[#271c12] sm:text-[2rem]">{currentStandardQuestion.text}</p>
+                </div>
+                <div className="mt-5 grid gap-3">
+                  {scale.options.map((option) => {
+                    const isSelected = currentAnswer === option.value;
+                    return (
+                      <button
+                        key={`${currentStandardQuestion.id}-${option.value}`}
+                        onClick={() => selectAnswer(option.value)}
+                        disabled={isTransitioning}
+                        aria-pressed={isSelected}
+                        className={`rounded-[24px] border px-5 py-4 text-left transition duration-300 ${
+                          isSelected
+                            ? "border-[#8d6c47] bg-[#2e2217] text-[#f7efe3]"
+                            : "border-[#d8ccb8] bg-white/80 text-[#332619] hover:-translate-y-0.5 hover:border-[#9e7b55] hover:bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-lg font-semibold">{option.label}</span>
+                          <span className="text-xs tracking-[0.18em] uppercase opacity-70">分值 {option.value}</span>
+                        </div>
+                        <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-[#eadfce]" : "text-[#68543d]"}`}>
+                          {option.detail}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+          </div>
 
-                return (
-                  <button
-                    key={`${currentQuestion.id}-${option.value}`}
-                    onClick={() => selectAnswer(option.value)}
-                    disabled={isTransitioning}
-                    aria-pressed={isSelected}
-                    className={`rounded-[24px] border px-5 py-4 text-left transition duration-300 ${
-                      isSelected
-                        ? "border-[#8d6c47] bg-[#2e2217] text-[#f7efe3]"
-                        : "border-[#d8ccb8] bg-white/80 text-[#332619] hover:-translate-y-0.5 hover:border-[#9e7b55] hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-lg font-semibold">{option.label}</span>
-                      <span className="text-xs tracking-[0.18em] uppercase opacity-70">分值 {option.value}</span>
-                    </div>
-                    <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-[#eadfce]" : "text-[#68543d]"}`}>
-                      {option.detail}
-                    </p>
-                  </button>
-                );
-              })}
+          {/* ── Mobile Question Navigation (bottom strip) ── */}
+          <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#d8ccb8] bg-[#f5efe5]/95 px-4 py-2.5 backdrop-blur-md lg:hidden">
+            <div className="mx-auto flex max-w-3xl items-center gap-3">
+              <p className="shrink-0 text-xs font-medium text-[#876c4b]">{answeredCount}/{questionCount}</p>
+              <div className="flex flex-1 gap-1 overflow-x-auto pb-0.5">
+                {Array.from({ length: questionCount }, (_, index) => {
+                  const isAnswered = answers[index] !== null;
+                  const isCurrent = index === currentIndex;
+                  return (
+                    <button
+                      key={`mnav-${index}`}
+                      onClick={() => jumpToQuestion(index)}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-medium transition ${
+                        isCurrent
+                          ? "bg-[#2e2217] text-[#f7efe3]"
+                          : isAnswered
+                            ? "bg-[#9f7b52] text-white"
+                            : "bg-white/70 text-[#6b5a44]"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          </div>
           </div>
         </section>
       ) : null}
@@ -283,89 +405,158 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
               <div className="rounded-[26px] bg-[#2b2017] px-5 py-4 text-[#f7efe4]">
                 <p className="text-xs tracking-[0.2em] uppercase text-[#d7bf97]">完成情况</p>
                 <p className="mt-2 text-3xl font-semibold">
-                  {scale.questions.length} / {scale.questions.length}
+                  {questionCount} / {questionCount}
                 </p>
                 <p className="mt-1 text-sm text-[#f1e4d4]">已全部作答</p>
               </div>
             </div>
 
-            <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-[28px] bg-[#f8efe2] p-6">
-                <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">核心结果</p>
-                <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#b08a60] via-[#8a6847] to-[#3a2c1f]"
-                    style={{ width: `${Math.max(12, Math.round(result.normalized * 100))}%` }}
-                  />
-                </div>
-                <div className="mt-5 flex items-end gap-3">
-                  <p className="text-5xl font-semibold text-[#2f2115]">{result.totalScore}</p>
-                  <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
-                </div>
+            {/* ── MBTI Result ── */}
+            {result.kind === "mbti" ? (
+              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-[28px] bg-[#f8efe2] p-6">
+                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">你的 MBTI 类型</p>
+                  <div className="mt-5 flex items-end gap-3">
+                    <p className="text-6xl font-bold tracking-wider text-[#2f2115]">{result.typeCode}</p>
+                  </div>
+                  <p className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
+                    {result.typeProfile.nickname}
+                  </p>
+                  <p className="mt-5 text-sm leading-7 text-[#5d4a36]">{result.typeProfile.summary}</p>
 
-                {result.kind === "sum" ? (
-                  <>
-                    <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                      {result.band.label}
-                    </p>
-                    <p className="mt-4 text-base leading-8 text-[#423121]">{result.band.emphasis}</p>
-                    <p className="mt-3 text-sm leading-7 text-[#5d4a36]">{result.band.summary}</p>
-                    <p className="mt-5 rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-[#5d4935]">
-                      建议：{result.band.recommendation}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                      多维人格画像
-                    </p>
-                    <p className="mt-4 text-sm leading-7 text-[#5d4935]">{result.overview}</p>
-                  </>
-                )}
-              </div>
-
-              <div className="grid gap-4">
-                {result.kind === "profile"
-                  ? result.dimensions.map((dimension) => (
-                      <article key={dimension.key} className="rounded-[26px] bg-white/92 p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">{dimension.name}</p>
-                            <p className="mt-2 text-sm leading-7 text-[#5b4733]">{dimension.description}</p>
+                  {/* Dimension pair bars */}
+                  <div className="mt-6 space-y-4">
+                    {result.pairs.map((pair) => {
+                      const total = pair.leftScore + pair.rightScore;
+                      const leftPct = total > 0 ? Math.round((pair.leftScore / total) * 100) : 50;
+                      return (
+                        <div key={pair.left + pair.right}>
+                          <div className="flex justify-between text-xs font-semibold text-[#6a553f]">
+                            <span>{pair.left} ({pair.leftScore})</span>
+                            <span>{pair.right} ({pair.rightScore})</span>
                           </div>
-                          <div className="rounded-2xl bg-[#2a2017] px-4 py-3 text-right text-[#f7efe3]">
-                            <p className="text-2xl font-semibold">{dimension.score}</p>
-                            <p className="text-xs tracking-[0.16em] uppercase text-[#d4bc95]">7 分制</p>
+                          <div className="mt-1 flex h-3 overflow-hidden rounded-full bg-white">
+                            <div
+                              className="h-full rounded-l-full bg-gradient-to-r from-[#b08a60] to-[#8a6847] transition-all"
+                              style={{ width: `${leftPct}%` }}
+                            />
+                            <div
+                              className="h-full rounded-r-full bg-gradient-to-r from-[#5a4632] to-[#3a2c1f] transition-all"
+                              style={{ width: `${100 - leftPct}%` }}
+                            />
                           </div>
                         </div>
-                        <div className="mt-4 rounded-[20px] bg-[#f7f0e5] px-4 py-3">
-                          <p className="text-sm font-semibold text-[#473422]">{dimension.band.label}</p>
-                          <p className="mt-2 text-sm leading-7 text-[#614d38]">{dimension.band.summary}</p>
-                        </div>
-                      </article>
-                    ))
-                  : (
-                      <>
-                        <article className="rounded-[26px] bg-white/92 p-5">
-                          <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">结果解读</p>
-                          <p className="mt-3 text-base leading-8 text-[#3c2d20]">{result.band.summary}</p>
-                        </article>
-                        <article className="rounded-[26px] bg-white/92 p-5">
-                          <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">机构使用提示</p>
-                          <p className="mt-3 text-sm leading-7 text-[#5a4734]">
-                            咨询师可将该结论作为首次访谈前的快速预判，不替代临床诊断，也不替代面对面风险评估。
-                          </p>
-                        </article>
-                        <article className="rounded-[26px] bg-white/92 p-5">
-                          <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">隐私承诺</p>
-                          <p className="mt-3 text-sm leading-7 text-[#5a4734]">
-                            本系统不创建账号、不写入数据库，来访者关闭页面后答题记录不会留存在平台侧。
-                          </p>
-                        </article>
-                      </>
-                    )}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">适合领域</p>
+                    <p className="mt-3 text-sm leading-7 text-[#3c2d20]">{result.typeProfile.suitableFields}</p>
+                  </article>
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">适合职业</p>
+                    <p className="mt-3 text-sm leading-7 text-[#3c2d20]">{result.typeProfile.suitableCareers}</p>
+                  </article>
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">隐私承诺</p>
+                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
+                      本系统不创建账号、不写入数据库，来访者关闭页面后答题记录不会留存在平台侧。
+                    </p>
+                  </article>
+                </div>
               </div>
-            </div>
+            ) : null}
+
+            {/* ── Profile Result (temperament & personality) ── */}
+            {result.kind === "profile" ? (
+              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-[28px] bg-[#f8efe2] p-6">
+                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">核心结果</p>
+                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#b08a60] via-[#8a6847] to-[#3a2c1f]"
+                      style={{ width: `${Math.max(12, Math.round(result.normalized * 100))}%` }}
+                    />
+                  </div>
+                  <div className="mt-5 flex items-end gap-3">
+                    <p className="text-5xl font-semibold text-[#2f2115]">{result.totalScore}</p>
+                    <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
+                  </div>
+                  <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
+                    多维画像
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-[#5d4935]">{result.overview}</p>
+                </div>
+                <div className="grid gap-4">
+                  {result.dimensions.map((dimension) => (
+                    <article key={dimension.key} className="rounded-[26px] bg-white/92 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">{dimension.name}</p>
+                          <p className="mt-2 text-sm leading-7 text-[#5b4733]">{dimension.description}</p>
+                        </div>
+                        <div className="rounded-2xl bg-[#2a2017] px-4 py-3 text-right text-[#f7efe3]">
+                          <p className="text-2xl font-semibold">{dimension.score}</p>
+                          <p className="text-xs tracking-[0.16em] uppercase text-[#d4bc95]">得分</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 rounded-[20px] bg-[#f7f0e5] px-4 py-3">
+                        <p className="text-sm font-semibold text-[#473422]">{dimension.band.label}</p>
+                        <p className="mt-2 text-sm leading-7 text-[#614d38]">{dimension.band.summary}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* ── Sum Result ── */}
+            {result.kind === "sum" ? (
+              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-[28px] bg-[#f8efe2] p-6">
+                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">核心结果</p>
+                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#b08a60] via-[#8a6847] to-[#3a2c1f]"
+                      style={{ width: `${Math.max(12, Math.round(result.normalized * 100))}%` }}
+                    />
+                  </div>
+                  <div className="mt-5 flex items-end gap-3">
+                    <p className="text-5xl font-semibold text-[#2f2115]">{result.totalScore}</p>
+                    <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
+                  </div>
+                  <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
+                    {result.band.label}
+                  </p>
+                  <p className="mt-4 text-base leading-8 text-[#423121]">{result.band.emphasis}</p>
+                  <p className="mt-3 text-sm leading-7 text-[#5d4a36]">{result.band.summary}</p>
+                  <p className="mt-5 rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-[#5d4935]">
+                    建议：{result.band.recommendation}
+                  </p>
+                </div>
+                <div className="grid gap-4">
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">结果解读</p>
+                    <p className="mt-3 text-base leading-8 text-[#3c2d20]">{result.band.summary}</p>
+                  </article>
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">机构使用提示</p>
+                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
+                      咨询师可将该结论作为首次访谈前的快速预判，不替代临床诊断，也不替代面对面风险评估。
+                    </p>
+                  </article>
+                  <article className="rounded-[26px] bg-white/92 p-5">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">隐私承诺</p>
+                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
+                      本系统不创建账号、不写入数据库，来访者关闭页面后答题记录不会留存在平台侧。
+                    </p>
+                  </article>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

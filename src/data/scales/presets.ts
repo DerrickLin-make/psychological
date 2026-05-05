@@ -16,3 +16,12 @@ export const agreementOptions: ScaleOption[] = [
   { label: "比较符合", detail: "通常能代表我的状态", value: 6 },
   { label: "非常符合", detail: "非常贴近我的稳定特质", value: 7 },
 ];
+
+export const temperamentOptions: ScaleOption[] = [
+  { label: "很符合", detail: "与自己的情况非常一致", value: 2 },
+  { label: "比较符合", detail: "大部分时候如此", value: 1 },
+  { label: "中间状态", detail: "不好判断，介于两者之间", value: 0 },
+  { label: "比较不符合", detail: "大部分时候不是这样", value: -1 },
+  { label: "完全不符合", detail: "几乎完全不像自己", value: -2 },
+];
+
