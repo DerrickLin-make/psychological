@@ -26,9 +26,11 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
   const [saveMessage, setSaveMessage] = useState("");
   const reportRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
       }
@@ -95,16 +97,23 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     }
 
     timerRef.current = window.setTimeout(() => {
+      if (!mountedRef.current) {
+        return;
+      }
+
       const isLastQuestion = currentIndex === questionCount - 1;
 
       if (isLastQuestion) {
-        const completedAnswers = nextAnswers.map((answer) => {
-          if (answer === null) {
-            throw new Error("Encountered incomplete answer set.");
-          }
+        const firstMissingIndex = nextAnswers.findIndex((answer) => answer === null);
 
-          return answer;
-        });
+        if (firstMissingIndex !== -1) {
+          setCurrentIndex(firstMissingIndex);
+          setSaveMessage(`还有第 ${firstMissingIndex + 1} 题未作答，请补全后再查看报告。`);
+          setIsTransitioning(false);
+          return;
+        }
+
+        const completedAnswers = nextAnswers.filter((answer): answer is number => answer !== null);
 
         setResult(scoreScale(scale, completedAnswers));
         setStage("result");

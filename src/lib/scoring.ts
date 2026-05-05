@@ -81,7 +81,13 @@ function getAdjustedScore(scale: ScaleDefinition, raw: number, reverse?: boolean
 }
 
 function findBand<T extends { min: number; max: number }>(bands: T[], value: number) {
-  return bands.find((band) => value >= band.min && value <= band.max) ?? bands[bands.length - 1];
+  const band = bands.find((item) => value >= item.min && value <= item.max);
+
+  if (!band) {
+    throw new Error(`Score ${value} is outside configured band ranges.`);
+  }
+
+  return band;
 }
 
 function scoreSumScale(scale: ScaleDefinition, answers: number[]): SumScaleResult {
