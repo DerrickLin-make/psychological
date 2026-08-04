@@ -1,640 +1,371 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import type { ScaleDefinition } from "@/data/scales";
+import { toPng } from "html-to-image";
+import { useRef, useState } from "react";
+import type { MbtiQuestion, ScaleAnswer, ScaleDefinition, ScaleQuestion } from "@/data/scales";
 import { scoreScale, type ScaleResult } from "@/lib/scoring";
 
 type ScaleExperienceProps = {
   scale: ScaleDefinition;
 };
 
-export function ScaleExperience({ scale }: ScaleExperienceProps) {
-  const isMbti = scale.kind === "mbti";
-  const questionCount = isMbti
-    ? (scale.mbtiQuestions?.length ?? 0)
-    : scale.questions.length;
+type AnswerState = Array<ScaleAnswer | null>;
 
+function questionCount(scale: ScaleDefinition) {
+  return scale.kind === "mbti" ? (scale.mbtiQuestions?.length ?? 0) : scale.questions.length;
+}
+
+function getQuestion(scale: ScaleDefinition, index: number): ScaleQuestion | MbtiQuestion {
+  if (scale.kind === "mbti") {
+    const question = scale.mbtiQuestions?.[index];
+    if (!question) throw new Error("MBTI question is missing.");
+    return question;
+  }
+  const question = scale.questions[index];
+  if (!question) throw new Error("Scale question is missing.");
+  return question;
+}
+
+function isMbtiQuestion(question: ScaleQuestion | MbtiQuestion): question is MbtiQuestion {
+  return "optionA" in question;
+}
+
+function resultLabel(result: ScaleResult) {
+  if (result.kind === "sum") return result.band.label;
+  if (result.kind === "mbti") return `${result.typeCode} · ${result.typeProfile.nickname}`;
+  if (result.kind === "custom") return result.label;
+  return result.temperament?.label ?? "人格维度画像";
+}
+
+function ResultSummary({ result }: { result: ScaleResult }) {
+  if (result.kind === "sum") {
+    return (
+      <>
+        <p className="text-5xl font-semibold tracking-tight text-[#23170e]">{result.totalScore}</p>
+        <p className="mt-2 text-sm text-[#6a5540]">满分 {result.maxScore} 分</p>
+        {result.rawScore !== undefined ? (
+          <p className="mt-1 text-sm text-[#6a5540]">原始总分 {result.rawScore} 分，已按 Word 规则换算标准分。</p>
+        ) : null}
+        <p className="mt-5 text-base font-semibold text-[#4d3a28]">{result.band.emphasis}</p>
+        <p className="mt-2 text-sm leading-7 text-[#6a5540]">{result.band.summary}</p>
+        <p className="mt-3 text-sm leading-7 text-[#6a5540]">建议：{result.band.recommendation}</p>
+      </>
+    );
+  }
+
+  if (result.kind === "mbti") {
+    return (
+      <>
+        <p className="text-5xl font-semibold tracking-tight text-[#23170e]">{result.typeCode}</p>
+        <p className="mt-3 text-xl font-semibold text-[#4d3a28]">{result.typeProfile.nickname}</p>
+        <p className="mt-4 text-sm leading-7 text-[#6a5540]">{result.typeProfile.summary}</p>
+        <p className="mt-3 text-sm leading-7 text-[#6a5540]">{result.typeProfile.detailedDescription}</p>
+        <p className="mt-4 text-sm leading-7 text-[#6a5540]">
+          适合职业参考：{result.typeProfile.suitableCareers || "文档未提供具体职业列表。"}
+        </p>
+      </>
+    );
+  }
+
+  if (result.kind === "profile") {
+    return (
+      <>
+        <p className="text-5xl font-semibold tracking-tight text-[#23170e]">{result.temperament?.label ?? "维度画像"}</p>
+        <p className="mt-4 text-sm leading-7 text-[#6a5540]">{result.overview}</p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p className="text-5xl font-semibold tracking-tight text-[#23170e]">{result.totalScore}</p>
+      <p className="mt-2 text-sm text-[#6a5540]">满分 {result.maxScore} 分</p>
+      <p className="mt-4 text-base font-semibold text-[#4d3a28]">{result.summary}</p>
+    </>
+  );
+}
+
+function ResultDetails({ result }: { result: ScaleResult }) {
+  if (result.kind === "mbti") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {result.pairs.map((pair) => (
+          <div key={`${pair.left}-${pair.right}`} className="rounded-2xl border border-[#d8ccb8] bg-white/55 p-4">
+            <div className="flex items-center justify-between text-sm font-semibold text-[#4d3a28]">
+              <span>{pair.left} {pair.leftScore}</span>
+              <span>{pair.right} {pair.rightScore}</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e8ded0]">
+              <div
+                className="h-full rounded-full bg-[#8f6c48]"
+                style={{ width: `${Math.max(8, (Math.max(pair.leftScore, pair.rightScore) / (pair.leftScore + pair.rightScore || 1)) * 100)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#6a5540]">倾向：{pair.winner}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (result.kind === "profile") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {result.dimensions.map((dimension) => (
+          <div key={dimension.key} className="rounded-2xl border border-[#d8ccb8] bg-white/55 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold text-[#4d3a28]">{dimension.name}</p>
+                <p className="mt-1 text-xs text-[#6a5540]">{dimension.band.label}</p>
+              </div>
+              <p className="text-xl font-semibold text-[#8f6c48]">{dimension.score}</p>
+            </div>
+            {dimension.description ? <p className="mt-3 text-sm leading-6 text-[#6a5540]">{dimension.description}</p> : null}
+            <p className="mt-3 text-xs leading-5 text-[#6a5540]">{dimension.band.summary}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (result.kind === "custom") {
+    return (
+      <>
+        {result.metrics?.length ? (
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            {result.metrics.map((metric) => (
+              <div key={metric.label} className="rounded-2xl border border-[#d8ccb8] bg-white/55 p-4">
+                <p className="text-xs text-[#6a5540]">{metric.label}</p>
+                <p className="mt-2 text-xl font-semibold text-[#4d3a28]">{metric.value}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {result.sections.map((section) => (
+            <div key={section.key} className="rounded-2xl border border-[#d8ccb8] bg-white/55 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <p className="font-semibold text-[#4d3a28]">{section.label}</p>
+                <p className="text-xl font-semibold text-[#8f6c48]">{section.score}</p>
+              </div>
+              {section.maxScore !== undefined ? <p className="mt-1 text-xs text-[#6a5540]">满分 {section.maxScore}</p> : null}
+              {section.summary ? <p className="mt-2 text-xs leading-5 text-[#6a5540]">{section.summary}</p> : null}
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  return null;
+}
+
+export function ScaleExperience({ scale }: ScaleExperienceProps) {
+  const totalQuestions = questionCount(scale);
   const [stage, setStage] = useState<"intro" | "question" | "result">("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Array<number | null>>(
-    () => Array.from({ length: questionCount }, () => null),
-  );
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [answers, setAnswers] = useState<AnswerState>(() => Array.from({ length: totalQuestions }, () => null));
   const [result, setResult] = useState<ScaleResult | null>(null);
+  const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const reportRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      if (timerRef.current) {
-        window.clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [stage, currentIndex]);
-
-  const answeredCount = answers.filter((answer) => answer !== null).length;
-  const progress = Math.round((answeredCount / questionCount) * 100);
-  const currentAnswer = answers[currentIndex];
-
-  // Get current question data depending on scale kind
-  const currentMbtiQuestion = isMbti ? scale.mbtiQuestions?.[currentIndex] : null;
-  const currentStandardQuestion = !isMbti ? scale.questions[currentIndex] : null;
-
-  function resetFlow() {
+  const reset = () => {
     setStage("intro");
     setCurrentIndex(0);
-    setAnswers(Array.from({ length: questionCount }, () => null));
+    setAnswers(Array.from({ length: totalQuestions }, () => null));
     setResult(null);
+    setError("");
     setSaveMessage("");
-    setIsTransitioning(false);
-  }
+  };
 
-  function startAssessment() {
-    setStage("question");
-    setCurrentIndex(0);
-    setSaveMessage("");
-  }
-
-  function goBack() {
-    if (currentIndex === 0 || isTransitioning) {
-      return;
+  const finish = (nextAnswers: AnswerState) => {
+    try {
+      setResult(scoreScale(scale, nextAnswers as ScaleAnswer[]));
+      setError("");
+      setStage("result");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "计分失败，请检查答案。" );
     }
+  };
 
-    setCurrentIndex((previous) => previous - 1);
-    setSaveMessage("");
-  }
-
-  function jumpToQuestion(index: number) {
-    if (isTransitioning || index < 0 || index >= questionCount) {
-      return;
-    }
-    setCurrentIndex(index);
-    setSaveMessage("");
-  }
-
-  function selectAnswer(value: number) {
-    if (isTransitioning) {
-      return;
-    }
-
+  const choose = (value: ScaleAnswer) => {
     const nextAnswers = [...answers];
     nextAnswers[currentIndex] = value;
     setAnswers(nextAnswers);
-    setIsTransitioning(true);
-    setSaveMessage("");
-
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current);
-    }
-
-    timerRef.current = window.setTimeout(() => {
-      if (!mountedRef.current) {
-        return;
-      }
-
-      const isLastQuestion = currentIndex === questionCount - 1;
-
-      if (isLastQuestion) {
-        const firstMissingIndex = nextAnswers.findIndex((answer) => answer === null);
-
-        if (firstMissingIndex !== -1) {
-          setCurrentIndex(firstMissingIndex);
-          setSaveMessage(`还有第 ${firstMissingIndex + 1} 题未作答，请补全后再查看报告。`);
-          setIsTransitioning(false);
-          return;
-        }
-
-        const completedAnswers = nextAnswers.filter((answer): answer is number => answer !== null);
-
-        setResult(scoreScale(scale, completedAnswers));
-        setStage("result");
-      } else {
-        setCurrentIndex((previous) => previous + 1);
-      }
-
-      setIsTransitioning(false);
-    }, 220);
-  }
-
-  async function saveReport() {
-    if (!reportRef.current) {
+    if (currentIndex === totalQuestions - 1) {
+      finish(nextAnswers);
       return;
     }
+    setCurrentIndex((index) => index + 1);
+  };
 
+  const continueInput = () => {
+    const value = answers[currentIndex];
+    if (value === null || value === "") {
+      setError("请先完成当前题目。");
+      return;
+    }
+    if (currentIndex === totalQuestions - 1) finish(answers);
+    else {
+      setError("");
+      setCurrentIndex((index) => index + 1);
+    }
+  };
+
+  const updateTextAnswer = (value: string) => {
+    const nextAnswers = [...answers];
+    nextAnswers[currentIndex] = value;
+    setAnswers(nextAnswers);
+    setError("");
+  };
+
+  async function saveReport() {
+    if (!reportRef.current) return;
+    setIsSaving(true);
+    setSaveMessage("");
     try {
-      setIsSaving(true);
-      setSaveMessage("");
-      const htmlToImage = await import("html-to-image");
-      const renderOptions = {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#f5efe5",
-      };
-
-      let dataUrl: string;
-      try {
-        dataUrl = await htmlToImage.toPng(reportRef.current, renderOptions);
-      } catch {
-        dataUrl = await htmlToImage.toJpeg(reportRef.current, { ...renderOptions, quality: 0.92 });
-      }
-
+      const dataUrl = await toPng(reportRef.current, { cacheBust: true, pixelRatio: 2 });
       const link = document.createElement("a");
-      link.download = `${scale.slug}-report.png`;
+      link.download = `${scale.shortTitle}-测评结果.png`;
       link.href = dataUrl;
       link.click();
-      setSaveMessage("报告长图已生成，可直接保存到相册。");
+      setSaveMessage("结果图片已生成，可以保存到本地。" );
     } catch {
-      setSaveMessage("长图生成失败，请稍后重试或使用系统截图保存。");
+      setSaveMessage("保存图片失败，请尝试截图保存。" );
     } finally {
       setIsSaving(false);
     }
   }
 
+  if (stage === "intro") {
+    return (
+      <main className="relative min-h-screen overflow-hidden">
+        <div className="aurora aurora-one" />
+        <div className="aurora aurora-two" />
+        <section className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-5 py-10 sm:px-8">
+          <div className="glass-panel w-full rounded-[36px] p-7 sm:p-12">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.24em] text-[#7b6246] uppercase">MindScope / Word Scales</p>
+                <p className="mt-3 text-sm text-[#6a5540]">{scale.category}</p>
+              </div>
+              <Link href="/scales" className="secondary-button">返回量表列表</Link>
+            </div>
+            <h1 className="mt-10 max-w-3xl font-serif text-4xl leading-tight text-[#23170e] sm:text-6xl">{scale.title}</h1>
+            <p className="mt-5 text-lg leading-8 text-[#5d4a36]">{scale.subtitle}</p>
+            <p className="mt-6 max-w-3xl text-base leading-8 text-[#6a5540]">{scale.summary}</p>
+            <div className="mt-8 rounded-2xl border border-[#d8ccb8] bg-white/45 p-5 text-sm leading-7 text-[#6a5540]">
+              <p>{scale.intro}</p>
+              <p className="mt-2">预计用时约 {scale.estimatedMinutes} 分钟，共 {totalQuestions} 题。</p>
+              <p className="mt-2">本测评仅供自我筛查和自我觉察参考，不能替代专业诊断。</p>
+            </div>
+            <button type="button" className="primary-button mt-8" onClick={() => setStage("question")}>开始测试</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (stage === "question") {
+    const question = getQuestion(scale, currentIndex);
+    const answer = answers[currentIndex];
+    const options = isMbtiQuestion(question) ? [] : (question.options ?? scale.options);
+    const inputType = isMbtiQuestion(question) ? "choice" : (question.inputType ?? "choice");
+
+    return (
+      <main className="relative min-h-screen overflow-hidden">
+        <div className="aurora aurora-one" />
+        <div className="aurora aurora-two" />
+        <section className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
+          <header className="flex items-center justify-between gap-4">
+            <Link href="/scales" className="text-sm font-semibold text-[#6a5540]">退出测试</Link>
+            <span className="text-sm text-[#6a5540]">{currentIndex + 1} / {totalQuestions}</span>
+          </header>
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e8ded0]">
+            <div className="h-full rounded-full bg-[#8f6c48] transition-all" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }} />
+          </div>
+          <div className="question-card glass-panel mt-8 rounded-[32px] p-6 sm:p-10">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[#876a4a] uppercase">{scale.shortTitle}</p>
+            <h1 className="mt-5 text-2xl font-semibold leading-9 text-[#23170e] sm:text-3xl">{question.text}</h1>
+
+            {isMbtiQuestion(question) ? (
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {[{ value: 0, label: "A", text: question.optionA }, { value: 1, label: "B", text: question.optionB }].map((option) => (
+                  <button key={option.label} type="button" className="secondary-button min-h-28 flex-col items-start gap-2 rounded-2xl p-5 text-left" onClick={() => choose(option.value)}>
+                    <span className="text-xs font-bold tracking-[0.2em] text-[#8f6c48]">{option.label}</span>
+                    <span className="text-base leading-7 text-[#4d3a28]">{option.text}</span>
+                  </button>
+                ))}
+              </div>
+            ) : inputType === "choice" ? (
+              <div className="mt-8 grid gap-3">
+                {options.map((option) => (
+                  <button key={`${question.id}-${option.value}`} type="button" className="secondary-button min-h-16 justify-start gap-4 rounded-2xl px-5 text-left" onClick={() => choose(option.value)}>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ede2d2] text-sm font-semibold text-[#8f6c48]">{option.label}</span>
+                    <span className="text-sm leading-6 text-[#4d3a28]">{option.detail}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-8">
+                <input
+                  type={inputType === "time" ? "time" : "text"}
+                  value={typeof answer === "string" ? answer : ""}
+                  placeholder={question.placeholder}
+                  onChange={(event) => updateTextAnswer(event.target.value)}
+                  className="w-full rounded-2xl border border-[#d8ccb8] bg-white/70 px-5 py-4 text-lg text-[#4d3a28] outline-none focus:border-[#8f6c48]"
+                />
+                <p className="mt-3 text-xs text-[#6a5540]">{inputType === "duration" ? "请填写 H:MM，例如 7:30。" : "请填写有效的时间。"}</p>
+                <button type="button" className="primary-button mt-6" onClick={continueInput}>继续</button>
+              </div>
+            )}
+            {error ? <p className="mt-5 text-sm text-[#9b493c]">{error}</p> : null}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!result) return null;
+
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-14 pt-6 sm:px-8 lg:px-10">
-      <header className="mb-8 flex items-center justify-between">
-        <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-[#6c5a43] uppercase">
-          MindScope
-        </Link>
-        <Link
-          href="/scales"
-          className="rounded-full border border-[#c5b79e] px-4 py-2 text-sm text-[#5e4a33] transition hover:border-[#8e7557] hover:text-[#2d2418]"
-        >
-          返回量表主页
-        </Link>
-      </header>
-
-      {stage === "intro" ? (
-        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="glass-panel overflow-hidden rounded-[32px] p-7 sm:p-9">
-            <div className="flex flex-wrap gap-3">
-              <span className="badge">{scale.category}</span>
-              <span className="badge">{questionCount} 题</span>
-              <span className="badge">约 {scale.estimatedMinutes} 分钟</span>
+    <main className="relative min-h-screen overflow-hidden">
+      <div className="aurora aurora-one" />
+      <div className="aurora aurora-two" />
+      <section className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
+        <header className="flex items-center justify-between gap-4">
+          <Link href="/scales" className="text-sm font-semibold text-[#6a5540]">返回量表列表</Link>
+          <button type="button" className="secondary-button" onClick={reset}>重新测试</button>
+        </header>
+        <div ref={reportRef} className="report-surface mt-8 rounded-[36px] border border-[#d8ccb8] p-6 sm:p-10">
+          <p className="text-xs font-semibold tracking-[0.24em] text-[#7b6246] uppercase">{scale.shortTitle} / Result</p>
+          <h1 className="mt-5 font-serif text-4xl leading-tight text-[#23170e]">{scale.title}</h1>
+          <div className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-3xl bg-white/55 p-6">
+              <p className="text-sm font-semibold text-[#8f6c48]">结果提示</p>
+              <p className="mt-4 text-2xl font-semibold leading-9 text-[#4d3a28]">{resultLabel(result)}</p>
+              <div className="mt-6"><ResultSummary result={result} /></div>
             </div>
-            <h1 className="mt-6 font-serif text-4xl leading-tight text-[#20160d] sm:text-5xl">{scale.title}</h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-[#4a3a2a] sm:text-lg">{scale.summary}</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] bg-white/70 p-5">
-                <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">指导语</p>
-                <p className="mt-3 text-sm leading-7 text-[#3f3224]">{scale.intro}</p>
-              </div>
-              <div className="rounded-[24px] bg-[#241b15] p-5 text-[#f7efe4]">
-                <p className="text-xs font-semibold tracking-[0.22em] text-[#dcbf8d] uppercase">计分说明</p>
-                <p className="mt-3 text-sm leading-7 text-[#f3e7d8]">{scale.scoringNote}</p>
-              </div>
-            </div>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button onClick={startAssessment} className="primary-button">
-                开始测评
-              </button>
+            <div className="rounded-3xl bg-white/40 p-6">
+              <p className="text-sm font-semibold text-[#8f6c48]">维度与计分详情</p>
+              <div className="mt-5"><ResultDetails result={result} /></div>
             </div>
           </div>
-
-          <aside className="grid gap-4">
-            <div className="glass-panel rounded-[28px] p-6">
-              <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">体验方式</p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#4d3e2d]">
-                <li>单页单题，点击选项后自动平滑跳转到下一题。</li>
-                <li>支持返回上一题修改答案，整个过程无需注册或登录。</li>
-                <li>所有题目、计分与结果都在浏览器本地完成，即开即走。</li>
-              </ul>
-            </div>
-            <div className="glass-panel rounded-[28px] p-6">
-              <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">适用场景</p>
-              <p className="mt-4 text-sm leading-7 text-[#4d3e2d]">
-                咨询师可将本量表链接直接发给来访者。来访者完成后可立即查看结论，并将报告长图保存到手机相册。
-              </p>
-            </div>
-            <div className="glass-panel rounded-[28px] p-6">
-              <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">提醒</p>
-              <p className="mt-4 text-sm leading-7 text-[#4d3e2d]">
-                本页面演示的是纯前端测评流程。若用于正式机构服务，建议由专业人员复核题库与阈值配置。
-              </p>
-            </div>
-          </aside>
-        </section>
-      ) : null}
-
-      {stage === "question" ? (
-        <section className="mx-auto w-full max-w-6xl flex gap-5">
-          {/* ── Question Navigation Grid ── */}
-          <aside className="hidden lg:block w-64 shrink-0">
-            <div className="glass-panel rounded-[24px] p-4 sticky top-6">
-              <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">题目导航</p>
-              <p className="mt-2 text-xs text-[#8a7359]">
-                已完成 {answeredCount} / {questionCount}
-              </p>
-              <div className="mt-4 grid grid-cols-6 gap-1.5">
-                {Array.from({ length: questionCount }, (_, index) => {
-                  const isAnswered = answers[index] !== null;
-                  const isCurrent = index === currentIndex;
-                  return (
-                    <button
-                      key={`nav-${index}`}
-                      onClick={() => jumpToQuestion(index)}
-                      aria-label={`跳转到第 ${index + 1} 题`}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 ${
-                        isCurrent
-                          ? "bg-[#2e2217] text-[#f7efe3] ring-2 ring-[#9f7b52] ring-offset-1"
-                          : isAnswered
-                            ? "bg-[#9f7b52] text-white hover:bg-[#8a6a45]"
-                            : "bg-white/70 text-[#6b5a44] hover:bg-[#e8ddd0]"
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-          <div className="flex-1 min-w-0">
-          <div className="glass-panel rounded-[30px] p-5 sm:p-7">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.22em] text-[#876c4b] uppercase">{scale.shortTitle}</p>
-                <h2 className="mt-2 font-serif text-3xl text-[#24180d]">
-                  第 {currentIndex + 1} / {questionCount} 题
-                </h2>
-              </div>
-              <button
-                onClick={goBack}
-                disabled={currentIndex === 0 || isTransitioning}
-                className="rounded-full border border-[#ccbda4] px-4 py-2 text-sm text-[#5b4832] transition enabled:hover:border-[#8d7558] enabled:hover:text-[#2d2418] disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                上一题
-              </button>
-            </div>
-
-            <div
-              className="mt-6 h-2 overflow-hidden rounded-full bg-white/70"
-              role="progressbar"
-              aria-valuenow={progress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`答题进度 ${progress}%`}
-            >
-              <div
-                className="h-full rounded-full bg-[#9f7b52] transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* ── MBTI binary question ── */}
-            {isMbti && currentMbtiQuestion ? (
-              <>
-                <div className={`question-card mt-7 rounded-[28px] bg-[#fffaf2] p-6 sm:p-8 ${isTransitioning ? "opacity-70" : ""}`}>
-                  <p className="text-xs font-semibold tracking-[0.22em] text-[#92714f] uppercase">
-                    {currentMbtiQuestion.text ? "请选择更符合你的一项" : "在下列词语中，哪一个更合你心意？"}
-                  </p>
-                  {currentMbtiQuestion.text ? (
-                    <p className="mt-4 text-2xl leading-10 text-[#271c12] sm:text-[2rem]">{currentMbtiQuestion.text}</p>
-                  ) : null}
-                </div>
-                <div className="mt-5 grid gap-3">
-                  {[
-                    { label: "A", text: currentMbtiQuestion.optionA, value: 0 },
-                    { label: "B", text: currentMbtiQuestion.optionB, value: 1 },
-                  ].map((option) => {
-                    const isSelected = currentAnswer === option.value;
-                    return (
-                      <button
-                        key={`${currentMbtiQuestion.id}-${option.label}`}
-                        onClick={() => selectAnswer(option.value)}
-                        disabled={isTransitioning}
-                        aria-pressed={isSelected}
-                        className={`rounded-[24px] border px-5 py-4 text-left transition duration-300 ${
-                          isSelected
-                            ? "border-[#8d6c47] bg-[#2e2217] text-[#f7efe3]"
-                            : "border-[#d8ccb8] bg-white/80 text-[#332619] hover:-translate-y-0.5 hover:border-[#9e7b55] hover:bg-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f0e6d8] text-sm font-bold text-[#6b5540]">
-                            {option.label}
-                          </span>
-                          <span className="text-lg">{option.text}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
-
-            {/* ── Standard Likert question ── */}
-            {!isMbti && currentStandardQuestion ? (
-              <>
-                <div className={`question-card mt-7 rounded-[28px] bg-[#fffaf2] p-6 sm:p-8 ${isTransitioning ? "opacity-70" : ""}`}>
-                  <p className="text-xs font-semibold tracking-[0.22em] text-[#92714f] uppercase">当前题目</p>
-                  <p className="mt-4 text-2xl leading-10 text-[#271c12] sm:text-[2rem]">{currentStandardQuestion.text}</p>
-                </div>
-                <div className="mt-5 grid gap-3">
-                  {scale.options.map((option) => {
-                    const isSelected = currentAnswer === option.value;
-                    return (
-                      <button
-                        key={`${currentStandardQuestion.id}-${option.value}`}
-                        onClick={() => selectAnswer(option.value)}
-                        disabled={isTransitioning}
-                        aria-pressed={isSelected}
-                        className={`rounded-[24px] border px-5 py-4 text-left transition duration-300 ${
-                          isSelected
-                            ? "border-[#8d6c47] bg-[#2e2217] text-[#f7efe3]"
-                            : "border-[#d8ccb8] bg-white/80 text-[#332619] hover:-translate-y-0.5 hover:border-[#9e7b55] hover:bg-white"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-lg font-semibold">{option.label}</span>
-                          <span className="text-xs tracking-[0.18em] uppercase opacity-70">分值 {option.value}</span>
-                        </div>
-                        <p className={`mt-2 text-sm leading-6 ${isSelected ? "text-[#eadfce]" : "text-[#68543d]"}`}>
-                          {option.detail}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
+          <div className="mt-6 rounded-2xl border border-[#d8ccb8] bg-white/40 p-5 text-sm leading-7 text-[#6a5540]">
+            <p className="font-semibold text-[#4d3a28]">计分说明</p>
+            <p className="mt-2">{scale.scoringNote}</p>
+            <p className="mt-2">本结果仅用于自我筛查和自我觉察参考，不能替代专业心理咨询、临床诊断或医疗建议。</p>
           </div>
-
-          {/* ── Mobile Question Navigation (bottom strip) ── */}
-          <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#d8ccb8] bg-[#f5efe5]/95 px-4 py-2.5 backdrop-blur-md lg:hidden">
-            <div className="mx-auto flex max-w-3xl items-center gap-3">
-              <p className="shrink-0 text-xs font-medium text-[#876c4b]">{answeredCount}/{questionCount}</p>
-              <div className="flex flex-1 gap-1 overflow-x-auto pb-0.5">
-                {Array.from({ length: questionCount }, (_, index) => {
-                  const isAnswered = answers[index] !== null;
-                  const isCurrent = index === currentIndex;
-                  return (
-                    <button
-                      key={`mnav-${index}`}
-                      onClick={() => jumpToQuestion(index)}
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-medium transition ${
-                        isCurrent
-                          ? "bg-[#2e2217] text-[#f7efe3]"
-                          : isAnswered
-                            ? "bg-[#9f7b52] text-white"
-                            : "bg-white/70 text-[#6b5a44]"
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          </div>
-        </section>
-      ) : null}
-
-      {stage === "result" && result ? (
-        <section className="mx-auto w-full max-w-5xl">
-          <div ref={reportRef} className="report-surface rounded-[34px] p-6 shadow-[0_30px_90px_rgba(63,38,17,0.16)] sm:p-9">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.24em] text-[#8f6d4c] uppercase">即时测评报告</p>
-                <h2 className="mt-3 font-serif text-4xl leading-tight text-[#23170e]">{scale.title}</h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-[#56432f]">
-                  本报告由浏览器本地即时生成，不上传任何答题记录。若要用于正式评估，请结合访谈和专业判断。
-                </p>
-              </div>
-              <div className="rounded-[26px] bg-[#2b2017] px-5 py-4 text-[#f7efe4]">
-                <p className="text-xs tracking-[0.2em] uppercase text-[#d7bf97]">完成情况</p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {questionCount} / {questionCount}
-                </p>
-                <p className="mt-1 text-sm text-[#f1e4d4]">已全部作答</p>
-              </div>
-            </div>
-
-            {/* ── MBTI Result ── */}
-            {result.kind === "mbti" ? (
-              <>
-                <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                  <div className="rounded-[28px] bg-[#f8efe2] p-6">
-                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">你的 MBTI 类型</p>
-                  <div className="mt-5 flex items-end gap-3">
-                    <p className="text-6xl font-bold tracking-wider text-[#2f2115]">{result.typeCode}</p>
-                  </div>
-                  <p className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                    {result.typeProfile.nickname}
-                  </p>
-                  <p className="mt-5 text-sm leading-7 text-[#5d4a36]">{result.typeProfile.summary}</p>
-
-                  {/* Dimension pair bars */}
-                  <div className="mt-6 space-y-4">
-                    {result.pairs.map((pair) => {
-                      const total = pair.leftScore + pair.rightScore;
-                      const leftPct = total > 0 ? Math.round((pair.leftScore / total) * 100) : 50;
-                      return (
-                        <div key={pair.left + pair.right}>
-                          <div className="flex justify-between text-xs font-semibold text-[#6a553f]">
-                            <span>{pair.left} ({pair.leftScore})</span>
-                            <span>{pair.right} ({pair.rightScore})</span>
-                          </div>
-                          <div className="mt-1 flex h-3 overflow-hidden rounded-full bg-white">
-                            <div
-                              className="h-full rounded-l-full bg-gradient-to-r from-[#b08a60] to-[#8a6847] transition-all"
-                              style={{ width: `${leftPct}%` }}
-                            />
-                            <div
-                              className="h-full rounded-r-full bg-gradient-to-r from-[#5a4632] to-[#3a2c1f] transition-all"
-                              style={{ width: `${100 - leftPct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid gap-4">
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">适合领域</p>
-                    <p className="mt-3 text-sm leading-7 text-[#3c2d20]">{result.typeProfile.suitableFields}</p>
-                  </article>
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">适合职业</p>
-                    <p className="mt-3 text-sm leading-7 text-[#3c2d20]">{result.typeProfile.suitableCareers}</p>
-                  </article>
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">隐私承诺</p>
-                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
-                      本系统不创建账号、不写入数据库，来访者关闭页面后答题记录不会留存在平台侧。
-                    </p>
-                  </article>
-                </div>
-              </div>
-              
-              {result.typeProfile.detailedDescription && (
-                <div className="mt-5 rounded-[28px] bg-[#f8efe2]/60 p-6 sm:p-8 backdrop-blur-md">
-                  <p className="text-sm font-semibold tracking-[0.2em] text-[#92714d] uppercase mb-5">深度解析</p>
-                  <div className="space-y-4 text-sm leading-8 text-[#4a3927] whitespace-pre-wrap">
-                    {result.typeProfile.detailedDescription}
-                  </div>
-                </div>
-              )}
-            </>
-            ) : null}
-
-            {/* ── Profile Result (temperament & personality) ── */}
-            {result.kind === "profile" ? (
-              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-[28px] bg-[#f8efe2] p-6">
-                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">核心结果</p>
-                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#b08a60] via-[#8a6847] to-[#3a2c1f]"
-                      style={{ width: `${Math.max(12, Math.round(result.normalized * 100))}%` }}
-                    />
-                  </div>
-                  <div className="mt-5 flex items-end gap-3">
-                    <p className="text-5xl font-semibold text-[#2f2115]">{result.totalScore}</p>
-                    <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
-                  </div>
-                  <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                    {result.temperament?.label ?? "多维画像"}
-                  </p>
-                  <p className="mt-4 text-sm leading-7 text-[#5d4935]">{result.overview}</p>
-                  {result.temperament ? (
-                    <div className="mt-5 rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-[#5d4935]">
-                      <p>
-                        主要维度：
-                        {result.temperament.primary.map((dimension) => `${dimension.name} ${dimension.score} 分`).join("、")}
-                      </p>
-                      {result.temperament.secondary.length > 0 ? (
-                        <p className="mt-2">
-                          混合参考：
-                          {result.temperament.secondary.map((dimension) => `${dimension.name} ${dimension.score} 分`).join("、")}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="grid gap-4">
-                  {result.dimensions.map((dimension) => (
-                    <article key={dimension.key} className="rounded-[26px] bg-white/92 p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">{dimension.name}</p>
-                          <p className="mt-2 text-sm leading-7 text-[#5b4733]">{dimension.description}</p>
-                        </div>
-                        <div className="rounded-2xl bg-[#2a2017] px-4 py-3 text-right text-[#f7efe3]">
-                          <p className="text-2xl font-semibold">{dimension.score}</p>
-                          <p className="text-xs tracking-[0.16em] uppercase text-[#d4bc95]">得分</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 rounded-[20px] bg-[#f7f0e5] px-4 py-3">
-                        <p className="text-sm font-semibold text-[#473422]">{dimension.band.label}</p>
-                        <p className="mt-2 text-sm leading-7 text-[#614d38]">{dimension.band.summary}</p>
-                      </div>
-                      {dimension.details && (
-                        <div className="mt-4 space-y-3">
-                          {dimension.details.neuralTraits && (
-                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
-                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">神经特点</p>
-                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.neuralTraits}</p>
-                            </div>
-                          )}
-                          {dimension.details.psychologicalTraits && (
-                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
-                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">心理特点</p>
-                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.psychologicalTraits}</p>
-                            </div>
-                          )}
-                          {dimension.details.typicalBehavior && (
-                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
-                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">典型表现</p>
-                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.typicalBehavior}</p>
-                            </div>
-                          )}
-                          {dimension.details.suitableCareers && (
-                            <div className="rounded-xl bg-[#fdfaf5] px-4 py-3">
-                              <p className="text-xs font-semibold tracking-wider text-[#b08a60]">适合职业</p>
-                              <p className="mt-1 text-sm leading-6 text-[#5b4733]">{dimension.details.suitableCareers}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {/* ── Sum Result ── */}
-            {result.kind === "sum" ? (
-              <div className="mt-8 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-[28px] bg-[#f8efe2] p-6">
-                  <p className="text-xs font-semibold tracking-[0.2em] text-[#92714d] uppercase">核心结果</p>
-                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#b08a60] via-[#8a6847] to-[#3a2c1f]"
-                      style={{ width: `${Math.max(12, Math.round(result.normalized * 100))}%` }}
-                    />
-                  </div>
-                  <div className="mt-5 flex items-end gap-3">
-                    <p className="text-5xl font-semibold text-[#2f2115]">{result.totalScore}</p>
-                    <p className="pb-2 text-sm text-[#6a553f]">/ {result.maxScore}</p>
-                  </div>
-                  <p className="mt-5 inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#5c4833]">
-                    {result.band.label}
-                  </p>
-                  <p className="mt-4 text-base leading-8 text-[#423121]">{result.band.emphasis}</p>
-                  <p className="mt-3 text-sm leading-7 text-[#5d4a36]">{result.band.summary}</p>
-                  <p className="mt-5 rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-[#5d4935]">
-                    建议：{result.band.recommendation}
-                  </p>
-                </div>
-                <div className="grid gap-4">
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">结果解读</p>
-                    <p className="mt-3 text-base leading-8 text-[#3c2d20]">{result.band.summary}</p>
-                  </article>
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">机构使用提示</p>
-                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
-                      咨询师可将该结论作为首次访谈前的快速预判，不替代临床诊断，也不替代面对面风险评估。
-                    </p>
-                  </article>
-                  <article className="rounded-[26px] bg-white/92 p-5">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-[#8e6d4d] uppercase">隐私承诺</p>
-                    <p className="mt-3 text-sm leading-7 text-[#5a4734]">
-                      本系统不创建账号、不写入数据库，来访者关闭页面后答题记录不会留存在平台侧。
-                    </p>
-                  </article>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <button onClick={saveReport} disabled={isSaving} className="primary-button">
-              {isSaving ? "正在生成长图..." : "生成长图保存"}
-            </button>
-            <button onClick={resetFlow} className="secondary-button">
-              重新作答
-            </button>
-            <Link href="/scales" className="secondary-button">
-              返回首页
-            </Link>
-          </div>
-          {saveMessage ? <p className="mt-3 text-sm text-[#5d4a36]">{saveMessage}</p> : null}
-        </section>
-      ) : null}
-    </div>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button type="button" className="primary-button" onClick={saveReport} disabled={isSaving}>{isSaving ? "生成中…" : "保存结果图片"}</button>
+          <button type="button" className="secondary-button" onClick={reset}>再测一次</button>
+        </div>
+        {saveMessage ? <p className="mt-3 text-sm text-[#5d4a36]">{saveMessage}</p> : null}
+      </section>
+    </main>
   );
 }

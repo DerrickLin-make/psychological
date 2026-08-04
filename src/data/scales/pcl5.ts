@@ -1,0 +1,40 @@
+import type { ScaleDefinition } from "./types";
+import { q, severity5, sumBands } from "./common";
+
+export const pcl5Scale: ScaleDefinition = {
+  slug: "pcl-5",
+  title: "创伤后应激障碍PCL-5量表（中文版，附评分解读）",
+  shortTitle: "PCL-5",
+  subtitle: "17 题 / 过去一个月 / PTSD 症状初步筛查",
+  category: "创伤与应激",
+  summary: "PCL-5是根据《精神障碍诊断与统计手册》第五版（DSM-5）中PTSD的诊断标准而制定的自评量表，共包含17个条目，分别对应DSM-5中PTSD的四个症状群：闯入性症状、回避症状、认知与心情的负性改变、警觉性增高症状。",
+  intro: "生活中有时我们会经历或目睹一些无法预料的突发事件（如事故、灾害、暴力侵犯等），这些事件带来的痛苦情绪可能会在记忆中持续存在。请评估在过去一个月里，下列问题描述的情况在多大程度上困扰了您。请选择符合您实际情况的严重程度。",
+  estimatedMinutes: 8,
+  scoringNote: "每题 1～5 分，总分范围 17～85 分；31 分以上提示需要进一步专业评估。",
+  kind: "sum",
+  options: severity5,
+  questions: [
+  q("pcl-1", "即使没有什么事情提起，也会不由自主地想起那件令人痛苦的事，或在脑海里出现有关的画面。", severity5, false),
+  q("pcl-2", "经常做与此事相关的噩梦。", severity5, false),
+  q("pcl-3", "突然感觉到或表现得好象那件痛苦的事情再次发生了（例如：闪回、幻觉等）。", severity5, false),
+  q("pcl-4", "当想起此事时，内心感到非常痛苦。", severity5, false),
+  q("pcl-5", "想起这件事时，会出现明显的身体反应（如：心跳加速、出汗、呼吸急促、发抖、恶心等）。", severity5, false),
+  q("pcl-6", "努力避免去感受或思考与那件事相关的内容。", severity5, false),
+  q("pcl-7", "努力避免接触会令您想起此事的人物、地点、谈话或活动。", severity5, false),
+  q("pcl-8", "记不清那件事情的一些重要细节。", severity5, false),
+  q("pcl-9", "对曾经感兴趣的重要活动（如工作、爱好、社交）失去了兴趣。", severity5, false),
+  q("pcl-10", "感觉与他人疏远或隔绝。", severity5, false),
+  q("pcl-11", "感觉情感变得麻木（例如，难以感受到爱、快乐等积极情感）。", severity5, false),
+  q("pcl-12", "对未来感觉绝望，觉得人生没有前途（例如，对事业、家庭没有期待）。", severity5, false),
+  q("pcl-13", "难以入睡，或睡眠很浅、易醒。", severity5, false),
+  q("pcl-14", "易怒，或为一点小事就大发雷霆。", severity5, false),
+  q("pcl-15", "很难集中注意力。", severity5, false),
+  q("pcl-16", "处于过度警觉的状态，总觉得不安（例如，经常检查周围环境、门窗等）。", severity5, false),
+  q("pcl-17", "容易被突然的声音或动作吓得心惊肉跳。", severity5, false),
+  ],
+  bands: sumBands([
+    [17, 30, "较低", "目前困扰较少", "总分低于文档中的 31 分进一步评估参考线。", "如单项症状仍影响生活，可考虑咨询专业人士。"],
+    [31, 33, "需要关注", "建议进一步评估", "总分达到文档中的 31～33 分区间。", "建议预约精神科医生或临床心理师进行面对面评估。"],
+    [34, 85, "较高", "强烈建议专业评估", "总分超过文档中的 33 分参考线。", "尽快寻求专业心理或精神科评估。"],
+  ]),
+}

@@ -1,0 +1,37 @@
+import type { ScaleDefinition } from "./types";
+import { likert5, q } from "./common";
+
+export const aasScale: ScaleDefinition = {
+  slug: "aas-r",
+  title: "修订版成人依恋量表（AAS）",
+  shortTitle: "AAS-R",
+  subtitle: "18 题 / 成人依恋关系感受",
+  category: "关系与依恋",
+  summary: "请阅读下列语句，并衡量你对情感关系的感受程度。请考虑你的所有关系（过去的和现在的），并回答有关你在这些关系中通常感受的题目。如果你从来没有卷入进情感关系中，请按你认为的情感会是怎样的来回答。",
+  intro: "请在量表的每题之后的括号里填写与你的感受一致的数字1~5。",
+  estimatedMinutes: 6,
+  scoringNote: "其中，2、7、8、13、16、17、18 题为反向计分条目；先计算 3 个分量表的平均分数，再将亲近和依赖合并，产生亲近依赖复合维度。",
+  kind: "custom",
+  options: likert5,
+  questions: [
+  q("aas-1", "我发现与人亲近比较容易。", likert5, false),
+  q("aas-2", "我发现要我去依赖别人很困难。", likert5, true),
+  q("aas-3", "我时常担心情侣并不真心爱我。", likert5, false),
+  q("aas-4", "我发现别人并不愿像我希望的那样亲近我。", likert5, false),
+  q("aas-5", "能依赖别人让我感到很舒服。", likert5, false),
+  q("aas-6", "我不在乎别人太亲近我。", likert5, false),
+  q("aas-7", "我发现当我需要别人帮助时，没人会帮我。", likert5, true),
+  q("aas-8", "和别人亲近使我感到有些不舒服。", likert5, true),
+  q("aas-9", "我时常担心情侣不想和我在一起。", likert5, false),
+  q("aas-10", "当我对别人表达我的情感时，我害怕他们与我的感觉会不一样。", likert5, false),
+  q("aas-11", "我时常怀疑情侣是否真正关心我。", likert5, false),
+  q("aas-12", "我对别人建立亲密的关系感到很舒服。", likert5, false),
+  q("aas-13", "当有人在情感上太亲近我时，我感到不舒服。", likert5, true),
+  q("aas-14", "我知道当我需要别人帮助时，总有人会帮我。", likert5, false),
+  q("aas-15", "我想与人亲近，但担心自己会受到伤害。", likert5, false),
+  q("aas-16", "我发现我很难完全信赖别人。", likert5, true),
+  q("aas-17", "情侣想要我在情感上更亲近一些，这常使我感到不舒服。", likert5, true),
+  q("aas-18", "我不能肯定，在我需要时，总找得到可以依赖的人。", likert5, true),
+  ],
+  customScoringKey: "aas",
+};

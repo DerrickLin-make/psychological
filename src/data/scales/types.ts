@@ -4,6 +4,10 @@ export type ScaleOption = {
   value: number;
 };
 
+export type ScaleAnswer = number | string;
+
+export type ScaleInputType = "choice" | "time" | "duration" | "text";
+
 export type ScaleBand = {
   min: number;
   max: number;
@@ -24,6 +28,7 @@ export type ScaleDimension = {
   key: string;
   name: string;
   description: string;
+  scoreMode?: "average" | "sum";
   details?: {
     neuralTraits?: string;
     psychologicalTraits?: string;
@@ -38,6 +43,9 @@ export type ScaleQuestion = {
   text: string;
   dimensionKey?: string;
   reverse?: boolean;
+  options?: ScaleOption[];
+  inputType?: ScaleInputType;
+  placeholder?: string;
 };
 
 /** MBTI binary question: each option maps to a dimension pole */
@@ -79,7 +87,7 @@ export type ScaleDefinition = {
   intro: string;
   estimatedMinutes: number;
   scoringNote: string;
-  kind: "sum" | "profile" | "mbti";
+  kind: "sum" | "profile" | "mbti" | "custom";
   options: ScaleOption[];
   questions: ScaleQuestion[];
   bands?: ScaleBand[];
@@ -90,4 +98,6 @@ export type ScaleDefinition = {
   mbtiTypes?: MbtiTypeProfile[];
   /** Temperament-specific: evaluation thresholds */
   temperamentRules?: TemperamentEvalRule;
+  customScoringKey?: "aas" | "psqi" | "scl90";
+  standardize?: "times-1.25-floor";
 };

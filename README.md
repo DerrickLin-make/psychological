@@ -6,6 +6,7 @@
 
 ```bash
 npm run dev
+npm run test
 npm run lint
 npm run build
 ```
@@ -30,6 +31,8 @@ http://localhost:3000
 量表数据在：
 
 - `src/data/scales/`
+
+当前已接入 `量表word版/` 中的 12 份 Word 量表：AAS-R、PCL-5、PSQI、MBTI、NEO-FFI、婚姻调适、FAD、SDS、SAS、EPDS、SCL-90 和 BDI-II。原始 Word 文件仅作为本地来源保存，不会在网页端上传或收集答题记录。
 
 详细维护文档见：
 

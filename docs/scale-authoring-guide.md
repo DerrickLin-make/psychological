@@ -24,6 +24,8 @@
   - 焦虑筛查示例
 - `personality-profile.ts`
   - 多维人格画像示例
+- `aas-r.ts`、`psqi.ts`、`scl90.ts`
+  - 使用自定义计分器的 Word 量表示例
 
 计分逻辑在：
 
@@ -64,11 +66,13 @@ export type ScaleDefinition = {
   intro: string;
   estimatedMinutes: number;
   scoringNote: string;
-  kind: "sum" | "profile";
+  kind: "sum" | "profile" | "mbti" | "custom";
   options: ScaleOption[];
   questions: ScaleQuestion[];
   bands?: ScaleBand[];
   dimensions?: ScaleDimension[];
+  customScoringKey?: "aas" | "psqi" | "scl90";
+  standardize?: "times-1.25-floor";
 };
 ```
 
@@ -163,6 +167,7 @@ export type ScaleDefinition = {
 
 - 只用于 `kind: "profile"`
 - 定义各维度名称、说明和区间标签
+- 如果原量表的维度区间是条目总分，可在维度上设置 `scoreMode: "sum"`；默认使用维度平均分
 
 ## 4. 题目选项怎么写
 
@@ -204,6 +209,8 @@ type ScaleQuestion = {
   text: string;
   dimensionKey?: string;
   reverse?: boolean;
+  options?: ScaleOption[];
+  inputType?: "choice" | "time" | "duration" | "text";
 };
 ```
 
@@ -255,6 +262,7 @@ questions: [
 - `kind` 必须是 `"sum"`
 - 必须提供 `bands`
 - `bands` 要覆盖所有可能的总分区间
+- 如果 Word 规则要求先把原始总分乘以 `1.25` 并取整数，可设置 `standardize: "times-1.25-floor"`，结果页会同时保留原始总分。
 
 ### 6.2 示例
 
@@ -344,7 +352,11 @@ questions: [
 ]
 ```
 
-## 8. 如何把新量表接入系统
+## 8. 自定义计分量表
+
+如果计分依赖时间差、睡眠效率、多个因子组合等规则，不要把公式硬塞进普通总分区间。新增一个 `customScoringKey`，并在 `src/lib/scoring.ts` 中实现独立计分器，同时为边界值补充测试。
+
+## 9. 如何把新量表接入系统
 
 假设你新增了文件：
 
@@ -376,7 +388,7 @@ export const scales = [
 - `/scales` 列表页会自动出现它
 - `/scales/scl90` 会自动生成页面
 
-## 9. 本地检查流程
+## 10. 本地检查流程
 
 每次加完量表都执行：
 
@@ -402,7 +414,7 @@ npm run dev
 - 区间文案是否符合预期
 - 长图导出是否正常
 
-## 10. 常见错误
+## 11. 常见错误
 
 ### 10.1 `slug` 重复
 
@@ -448,7 +460,7 @@ npm run dev
 
 - 录入时逐题核对原始量表说明
 
-### 10.4 多维量表题目没写 `dimensionKey`
+### 11.4 多维量表题目没写 `dimensionKey`
 
 问题：
 
@@ -477,7 +489,7 @@ npm run dev
 - 每题 `id` 保持唯一
 - 建议命名规则：`量表slug-序号`
 
-## 11. 对 50 题左右量表的建议
+## 12. 对 50 题左右量表的建议
 
 如果你未来大部分量表都在 50 题左右，建议：
 
@@ -494,7 +506,7 @@ npm run dev
 - 反向题漏标
 - 维度归属错误
 
-## 12. 推荐的新增量表工作方式
+## 13. 推荐的新增量表工作方式
 
 最稳的方式不是边看 PDF 边手敲，而是先整理成表格，再转代码。
 
@@ -507,7 +519,7 @@ npm run dev
 5. 本地手测
 6. 再部署
 
-## 13. 如果以后想做真正的“上传量表”
+## 14. 如果以后想做真正的“上传量表”
 
 当前项目没有后台上传能力。  
 如果以后你想做到“非开发人员也能录入量表”，可以再加一层：
@@ -526,7 +538,7 @@ npm run dev
 - 用模板复制
 - 手动加入 `index.ts`
 
-## 14. 最短操作版本
+## 15. 最短操作版本
 
 如果你只想记最短流程，就记这 4 步：
 
