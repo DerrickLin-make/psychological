@@ -50,6 +50,11 @@ function ResultSummary({ result }: { result: ScaleResult }) {
         <p className="mt-5 text-base font-semibold text-[#4d3a28]">{result.band.emphasis}</p>
         <p className="mt-2 text-sm leading-7 text-[#6a5540]">{result.band.summary}</p>
         <p className="mt-3 text-sm leading-7 text-[#6a5540]">建议：{result.band.recommendation}</p>
+        {result.notices?.map((notice) => (
+          <p key={notice} className="mt-4 rounded-2xl border border-[#c98976] bg-[#fff1ed] p-4 text-sm font-semibold leading-7 text-[#8f3f31]">
+            {notice}
+          </p>
+        ))}
       </>
     );
   }
@@ -215,6 +220,17 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     }
   };
 
+  const goBack = () => {
+    if (currentIndex === 0) return;
+    setCurrentIndex((index) => index - 1);
+    setError("");
+  };
+
+  const jumpToQuestion = (index: number) => {
+    setCurrentIndex(index);
+    setError("");
+  };
+
   const updateTextAnswer = (value: string) => {
     const nextAnswers = [...answers];
     nextAnswers[currentIndex] = value;
@@ -282,10 +298,26 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
         <section className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
           <header className="flex items-center justify-between gap-4">
             <Link href="/scales" className="text-sm font-semibold text-[#6a5540]">退出测试</Link>
-            <span className="text-sm text-[#6a5540]">{currentIndex + 1} / {totalQuestions}</span>
+            <div className="flex items-center gap-3">
+              <button type="button" className="secondary-button px-4 py-2 text-sm" onClick={goBack} disabled={currentIndex === 0}>上一题</button>
+              <span className="text-sm text-[#6a5540]">{currentIndex + 1} / {totalQuestions}</span>
+            </div>
           </header>
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e8ded0]">
             <div className="h-full rounded-full bg-[#8f6c48] transition-all" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }} />
+          </div>
+          <div className="mt-4 hidden gap-1 overflow-x-auto pb-1 lg:flex" aria-label="题目导航">
+            {Array.from({ length: totalQuestions }, (_, index) => (
+              <button
+                key={`question-${index + 1}`}
+                type="button"
+                className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold ${index === currentIndex ? "bg-[#2e2217] text-[#f7efe3]" : answers[index] !== null ? "bg-[#9f7b52] text-white" : "bg-white/70 text-[#6b5a44]"}`}
+                onClick={() => jumpToQuestion(index)}
+                aria-label={`跳转到第 ${index + 1} 题`}
+              >
+                {index + 1}
+              </button>
+            ))}
           </div>
           <div className="question-card glass-panel mt-8 rounded-[32px] p-6 sm:p-10">
             <p className="text-xs font-semibold tracking-[0.18em] text-[#876a4a] uppercase">{scale.shortTitle}</p>

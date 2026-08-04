@@ -1,5 +1,5 @@
 import type { ScaleDefinition } from "./types";
-import { likert5, q } from "./common";
+import { neoLikert5 as likert5, q } from "./common";
 
 export const neoFfiScale: ScaleDefinition = {
   slug: "neo-ffi",

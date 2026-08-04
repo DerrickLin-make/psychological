@@ -10,7 +10,7 @@ export const scl90Scale: ScaleDefinition = {
   summary: "指导语：下面有90条测验项目，列出了有些人可能有的问题，仔细阅读每一条，根据自己现在或最近一星期内的感觉，在相应的方格内划一个\"√\"。必须逐条填写不可遗漏，每一项只能划一个\"√\"，不能划两个或更多。自我评定的五个等级：",
   intro: "指导语：下面有90条测验项目，列出了有些人可能有的问题，仔细阅读每一条，根据自己现在或最近一星期内的感觉，在相应的方格内划一个\"√\"。必须逐条填写不可遗漏，每一项只能划一个\"√\"，不能划两个或更多。自我评定的五个等级：",
   estimatedMinutes: 15,
-  scoringNote: "The Word document contains a later 1-4 scoring description that conflicts with the 1-5 response table; this implementation keeps the tables 1-5 scale and treats 2-5 as positive items.",
+  scoringNote: "Word 文档的作答表使用 1～5 分，但后文公式使用 0～4 分。本实现保留作答表的 1～5 选项，并在计分时减 1 转换为 0～4（1＝无）；原始评分 2～5 视为阳性项目，因子分按转换后的 0～4 分计算。",
   kind: "custom",
   options: severity5,
   questions: [

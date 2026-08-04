@@ -37,9 +37,9 @@ export const sasScale: ScaleDefinition = {
   ],
   standardize: "times-1.25-floor",
   bands: sumBands([
-    [25, 49, "normal", "standard score below 50", "Below the document symptom reference line.", "Continue paying attention to your wellbeing."],
-    [50, 59, "mild", "standard score 50-59", "The Word document describes 50-59 as mild anxiety.", "Consider professional evaluation if distress persists."],
-    [60, 69, "moderate", "standard score 60-69", "The Word document describes 60-69 as moderate anxiety.", "Consider professional evaluation."],
-    [70, 100, "severe", "standard score 70 or above", "The Word document describes 70 or above as severe anxiety.", "Seek professional evaluation promptly."],
+    [25, 49, "正常范围", "标准分低于 50", "低于 Word 文档给出的症状参考线。", "继续关注自身状态。"],
+    [50, 59, "轻度", "标准分 50～59", "Word 文档将 50～59 分列为轻度焦虑范围。", "若困扰持续，建议进行专业评估。"],
+    [60, 69, "中度", "标准分 60～69", "Word 文档将 60～69 分列为中度焦虑范围。", "建议进行专业评估。"],
+    [70, 100, "重度", "标准分 ≥70", "Word 文档将 70 分及以上列为重度焦虑范围。", "建议尽快寻求专业评估。"],
   ]),
 };

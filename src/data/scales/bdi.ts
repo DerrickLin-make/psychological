@@ -39,9 +39,9 @@ export const bdiScale: ScaleDefinition = {
   q("bdi-21", "性兴趣丧失", bdiOptions(["和过去比较，我现在对性的兴趣和以前一样没有什么变化", "和过去比较，我现在对性的兴趣比过去降低了", "和过去比较，我现在对性的兴趣大大下降", "和过去比较，我现在对性的兴趣已经完全丧失"])),
   ],
   bands: sumBands([
-    [0, 13, "lower", "possible minimal depression", "The document describes 0-13 as possible no depression.", "Continue observing your emotional state."],
-    [14, 19, "mild", "possible mild depression", "The document describes 14-19 as possible mild depression.", "Consider professional support if symptoms persist."],
-    [20, 28, "moderate", "possible moderate depression", "The document describes 20-28 as possible moderate depression.", "Consider professional evaluation."],
-    [29, 63, "severe", "possible severe depression", "The document describes 29-63 as possible severe depression.", "Seek professional evaluation."],
+    [0, 13, "较低", "可能无明显抑郁表现", "Word 文档将 0～13 分列为可能无抑郁范围。", "继续关注近期情绪变化。"],
+    [14, 19, "轻度", "可能有轻度抑郁表现", "Word 文档将 14～19 分列为可能轻度抑郁范围。", "若症状持续，建议寻求专业支持。"],
+    [20, 28, "中度", "可能有中度抑郁表现", "Word 文档将 20～28 分列为可能中度抑郁范围。", "建议进行专业评估。"],
+    [29, 63, "较高", "可能有重度抑郁表现", "Word 文档将 29～63 分列为可能重度抑郁范围。", "建议尽快寻求专业评估。"],
   ]),
 };

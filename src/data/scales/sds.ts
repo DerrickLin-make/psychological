@@ -37,9 +37,9 @@ export const sdsScale: ScaleDefinition = {
   ],
   standardize: "times-1.25-floor",
   bands: sumBands([
-    [25, 52, "normal", "standard score below 53", "No clear depressive range in the Word document.", "Continue paying attention to your wellbeing."],
-    [53, 62, "mild", "standard score 53-62", "The Word document describes 53-62 as mild depression.", "Consider professional evaluation if distress persists."],
-    [63, 72, "moderate", "standard score 63-72", "The Word document describes 63-72 as moderate depression.", "Consider professional evaluation."],
-    [73, 100, "severe", "standard score 73 or above", "The Word document describes 73 or above as severe depression.", "Seek professional evaluation promptly."],
+    [25, 52, "正常范围", "标准分低于 53", "Word 文档未将该区间列为明显抑郁范围。", "继续关注自身状态。"],
+    [53, 62, "轻度", "标准分 53～62", "Word 文档将 53～62 分列为轻度抑郁范围。", "若困扰持续，建议进行专业评估。"],
+    [63, 72, "中度", "标准分 63～72", "Word 文档将 63～72 分列为中度抑郁范围。", "建议进行专业评估。"],
+    [73, 100, "重度", "标准分 ≥73", "Word 文档将 73 分及以上列为重度抑郁范围。", "建议尽快寻求专业评估。"],
   ]),
 };

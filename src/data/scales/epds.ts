@@ -12,7 +12,7 @@ export const epdsScale: ScaleDefinition = {
   summary: "请选择最接近您在过去7天内感受的答案。总分为0-30分，得分越高提示抑郁症状越严重。",
   intro: "请选择最接近您在过去7天内感受的答案。总分为0-30分，得分越高提示抑郁症状越严重。",
   estimatedMinutes: 5,
-  scoringNote: "每题为0-3分制（第1、2题为反向计分），请选择最符合自己过去7天感受的选项。",
+  scoringNote: "每题为 0～3 分制（第 1、2 题为反向计分），请选择最符合自己过去 7 天感受的选项。第 10 题得分 ≥1 时，无论总分多少，都应进一步进行专业评估。",
   kind: "sum",
   options: epdsOptions(["","","",""]),
   questions: [
@@ -28,8 +28,8 @@ export const epdsScale: ScaleDefinition = {
   q("epds-10", "我想过要伤害自己", epdsOptions(["没有这样", "很少这样", "有时候这样", "相当多时候这样"]), false),
   ],
   bands: sumBands([
-    [0, 8, "lower", "no clear depressive range", "The document describes 0-8 as no depression.", "Continue observing your emotional state."],
-    [9, 12, "mild", "mild range", "The document describes 9-12 as mild depression.", "Consider discussing persistent symptoms with a professional."],
-    [13, 30, "attention", "professional evaluation recommended", "The document recommends professional evaluation at 13 or above.", "Seek professional assessment."],
+    [0, 8, "较低", "未达到明显抑郁范围", "Word 文档将 0～8 分列为无抑郁范围。", "继续关注近期情绪变化。"],
+    [9, 12, "轻度", "可能有轻度抑郁表现", "Word 文档将 9～12 分列为轻度抑郁范围。", "若症状持续，建议与专业人员讨论。"],
+    [13, 30, "需关注", "建议进行专业评估", "Word 文档建议总分达到 13 分及以上时进行专业评估。", "建议寻求专业评估。"],
   ]),
 };

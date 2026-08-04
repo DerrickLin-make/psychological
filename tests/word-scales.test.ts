@@ -60,6 +60,16 @@ test("AAS-R and PSQI custom scoring follow the Word component rules", () => {
   assert.equal(psqiResult.metrics?.[0].value, "87.5%");
 });
 
+test("Word response options stay instrument-specific", () => {
+  const fad = scales.find((scale) => scale.slug === "fad");
+  const neo = scales.find((scale) => scale.slug === "neo-ffi");
+  assert.ok(fad);
+  assert.ok(neo);
+
+  assert.deepEqual(fad.options.map((option) => option.detail), ["完全不像我家", "不太像我家", "比较像我家", "完全像我家"]);
+  assert.deepEqual(neo.options.map((option) => option.detail), ["非常不符", "不太符合", "有些符合", "比较符合", "非常符合"]);
+});
+
 test("standardized self-rating scales use raw score times 1.25", () => {
   const sds = scales.find((scale) => scale.slug === "sds");
   const sas = scales.find((scale) => scale.slug === "sas");
@@ -70,13 +80,13 @@ test("standardized self-rating scales use raw score times 1.25", () => {
   assert.equal(sdsResult.kind, "sum");
   assert.equal(sdsResult.rawScore, 50);
   assert.equal(sdsResult.totalScore, 62);
-  assert.equal(sdsResult.band.label, "mild");
+  assert.equal(sdsResult.band.label, "轻度");
 
   const sasResult = scoreScale(sas, Array.from({ length: 20 }, () => 4));
   assert.equal(sasResult.kind, "sum");
   assert.equal(sasResult.rawScore, 65);
   assert.equal(sasResult.totalScore, 81);
-  assert.equal(sasResult.band.label, "severe");
+  assert.equal(sasResult.band.label, "重度");
 });
 
 test("EPDS, SCL-90, BDI-II, MBTI and profile scales score without invented answers", () => {
@@ -96,7 +106,13 @@ test("EPDS, SCL-90, BDI-II, MBTI and profile scales score without invented answe
   assert.ok(fad);
 
   assert.equal(scoreScale(epds, Array.from({ length: 10 }, () => 0)).kind, "sum");
-  assert.equal(scoreScale(scl90, Array.from({ length: 90 }, () => 1)).kind, "custom");
+  const epdsRiskResult = scoreScale(epds, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+  assert.equal(epdsRiskResult.kind, "sum");
+  assert.equal(epdsRiskResult.notices?.length, 1);
+  const sclResult = scoreScale(scl90, Array.from({ length: 90 }, () => 1));
+  assert.equal(sclResult.kind, "custom");
+  assert.equal(sclResult.totalScore, 0);
+  assert.equal(sclResult.maxScore, 360);
   assert.equal(scoreScale(bdi, Array.from({ length: 21 }, () => 0)).kind, "sum");
   assert.equal(scoreScale(mbti, Array.from({ length: 93 }, () => 0)).kind, "mbti");
   assert.equal(scoreScale(neo, Array.from({ length: 60 }, () => 3)).kind, "profile");

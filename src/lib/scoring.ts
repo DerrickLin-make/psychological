@@ -23,6 +23,7 @@ export type SumScaleResult = {
   maxScore: number;
   normalized: number;
   band: ScaleBand;
+  notices?: string[];
 };
 
 export type ProfileScaleResult = {
@@ -133,6 +134,10 @@ function scoreSumScale(scale: ScaleDefinition, answers: ScaleAnswer[]): SumScale
   const totalScore = scale.standardize === "times-1.25-floor" ? Math.floor(rawScore * 1.25) : rawScore;
   const maxScore = scale.standardize === "times-1.25-floor" ? Math.floor(rawMaxScore * 1.25) : rawMaxScore;
 
+  const notices = scale.slug === "epds" && scores[9] >= 1
+    ? ["第 10 题自伤意念得分 ≥1：无论总分多少，都应尽快联系专业医务人员进一步评估。"]
+    : undefined;
+
   return {
     kind: "sum",
     totalScore,
@@ -140,6 +145,7 @@ function scoreSumScale(scale: ScaleDefinition, answers: ScaleAnswer[]): SumScale
     maxScore,
     normalized: maxScore > 0 ? totalScore / maxScore : 0,
     band: findBand(scale.bands, totalScore),
+    ...(notices ? { notices } : {}),
   };
 }
 
@@ -360,10 +366,14 @@ function scorePsqi(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleR
 }
 
 function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleResult {
-  const scores = answers.map((answer, index) => numericAnswer(answer, `Answer ${index + 1}`));
+  const responseScores = answers.map((answer, index) => numericAnswer(answer, `Answer ${index + 1}`));
+  const scores = responseScores.map((score) => score - 1);
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
-  const positiveCount = scores.filter((score) => score > 1).length;
-  const positiveMean = positiveCount === 0 ? 0 : totalScore / positiveCount;
+  const positiveScores = scores.filter((score) => score > 0);
+  const positiveCount = positiveScores.length;
+  const positiveMean = positiveCount === 0
+    ? 0
+    : positiveScores.reduce((sum, score) => sum + score, 0) / positiveCount;
   const factorDefinitions = [
     ["F1", "躯体化", [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58]],
     ["F2", "强迫症状", [3, 9, 10, 28, 38, 45, 46, 51, 55, 65]],
@@ -380,7 +390,7 @@ function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScale
     key,
     label,
     score: Number((indexes.reduce((sum, item) => sum + scores[item - 1], 0) / indexes.length).toFixed(2)),
-    maxScore: 5,
+    maxScore: 4,
   }));
   const mean = totalScore / 90;
   const label = mean <= 0.5 ? "症状感受不明显" : mean <= 1.5 ? "有轻微症状感受" : mean <= 2.5 ? "轻到中度症状" : mean <= 3.5 ? "中到重度症状" : "症状频度和强度较高";
@@ -388,8 +398,8 @@ function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScale
   return {
     kind: "custom",
     totalScore,
-    maxScore: 450,
-    normalized: totalScore / 450,
+    maxScore: 360,
+    normalized: totalScore / 360,
     label,
     summary: `总症状指数（总均分）为 ${mean.toFixed(2)}，阳性项目数为 ${positiveCount}，阳性症状均分为 ${positiveMean.toFixed(2)}。`,
     metrics: [

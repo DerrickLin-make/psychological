@@ -1,10 +1,10 @@
 import type { ScaleBand, ScaleOption } from "./types";
 
 export const likert4: ScaleOption[] = [
-  { label: "1", detail: "没有或很少", value: 1 },
-  { label: "2", detail: "有时", value: 2 },
-  { label: "3", detail: "大部分时间", value: 3 },
-  { label: "4", detail: "绝大多数时间", value: 4 },
+  { label: "1", detail: "完全不像我家", value: 1 },
+  { label: "2", detail: "不太像我家", value: 2 },
+  { label: "3", detail: "比较像我家", value: 3 },
+  { label: "4", detail: "完全像我家", value: 4 },
 ];
 
 export const likert5: ScaleOption[] = [
@@ -13,6 +13,14 @@ export const likert5: ScaleOption[] = [
   { label: "3", detail: "不能确定", value: 3 },
   { label: "4", detail: "较符合", value: 4 },
   { label: "5", detail: "完全符合", value: 5 },
+];
+
+export const neoLikert5: ScaleOption[] = [
+  { label: "1", detail: "非常不符", value: 1 },
+  { label: "2", detail: "不太符合", value: 2 },
+  { label: "3", detail: "有些符合", value: 3 },
+  { label: "4", detail: "比较符合", value: 4 },
+  { label: "5", detail: "非常符合", value: 5 },
 ];
 
 export const frequency4: ScaleOption[] = [
