@@ -16,7 +16,7 @@ export const psqiScale: ScaleDefinition = {
   summary: "PSQI中前19个条目为自我评定问题，由被评价者亲自填写，后5个问题由睡眠同伴评定，主要根据最近1个月的睡眠习惯进行填写。",
   intro: "请根据最近 1 个月的睡眠习惯填写。时间题请按 24 小时制填写。",
   estimatedMinutes: 8,
-  scoringNote: "本页面呈现 Word 文档中可计分的自评单元：Q1～Q4、Q5A～J、Q6～Q9，共 18 个。原文将其概括为 19 个自评条目，但表格实际列出 18 个可计分单元；Q10 及 Q11～Q15 为睡眠同伴评定项目，不参与总分，因此未纳入本页计分。因子计分沿用原文：睡眠效率＝实际睡眠时间／床上时间×100%，并按 A～G 因子相加得到 0～21 分。",
+  scoringNote: "本测试包含 18 个可计分的自评单元：Q1～Q4、Q5A～J、Q6～Q9。Q10 及 Q11～Q15 为睡眠同伴评定项目，不参与本次总分。因子分为 A～G 七项之和，范围为 0～21 分；睡眠效率＝实际睡眠时间／床上时间×100%。",
   kind: "custom",
   options: psqiFrequencyOptions,
   questions: [

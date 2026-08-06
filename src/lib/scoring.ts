@@ -323,7 +323,7 @@ function scoreAas(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleRe
     maxScore: 90,
     normalized: adjusted.reduce((sum, value) => sum + value, 0) / 90,
     label,
-    summary: `亲近依赖复合均分为 ${composite}，焦虑均分为 ${anxiety}。依恋类型按 Word 文档中的 3 分界线判定。`,
+    summary: `亲近依赖复合均分为 ${composite}，焦虑均分为 ${anxiety}。依恋类型根据 3 分界线判定。`,
     sections: [
       ...groups.map((group) => ({ key: group.key, label: `${group.label}分量表均分`, score: group.score, maxScore: 5 })),
       { key: "composite", label: "亲近依赖复合均分", score: composite, maxScore: 5 },

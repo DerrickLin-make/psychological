@@ -45,7 +45,7 @@ function ResultSummary({ result }: { result: ScaleResult }) {
         <p className="text-5xl font-semibold tracking-tight text-[#23170e]">{result.totalScore}</p>
         <p className="mt-2 text-sm text-[#6a5540]">满分 {result.maxScore} 分</p>
         {result.rawScore !== undefined ? (
-          <p className="mt-1 text-sm text-[#6a5540]">原始总分 {result.rawScore} 分，已按 Word 规则换算标准分。</p>
+          <p className="mt-1 text-sm text-[#6a5540]">原始总分 {result.rawScore} 分，已换算为标准分。</p>
         ) : null}
         <p className="mt-5 text-base font-semibold text-[#4d3a28]">{result.band.emphasis}</p>
         <p className="mt-2 text-sm leading-7 text-[#6a5540]">{result.band.summary}</p>
@@ -67,7 +67,7 @@ function ResultSummary({ result }: { result: ScaleResult }) {
         <p className="mt-4 text-sm leading-7 text-[#6a5540]">{result.typeProfile.summary}</p>
         <p className="mt-3 text-sm leading-7 text-[#6a5540]">{result.typeProfile.detailedDescription}</p>
         <p className="mt-4 text-sm leading-7 text-[#6a5540]">
-          适合职业参考：{result.typeProfile.suitableCareers || "文档未提供具体职业列表。"}
+          适合职业参考：{result.typeProfile.suitableCareers || "暂无具体职业列表。"}
         </p>
       </>
     );
@@ -265,7 +265,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
           <div className="glass-panel w-full rounded-[36px] p-7 sm:p-12">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold tracking-[0.24em] text-[#7b6246] uppercase">MindScope / Word Scales</p>
+                <p className="text-xs font-semibold tracking-[0.24em] text-[#7b6246] uppercase">MindScope / Scales</p>
                 <p className="mt-3 text-sm text-[#6a5540]">{scale.category}</p>
               </div>
               <Link href="/scales" className="secondary-button">返回量表列表</Link>
@@ -306,12 +306,12 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e8ded0]">
             <div className="h-full rounded-full bg-[#8f6c48] transition-all" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }} />
           </div>
-          <div className="mt-4 hidden gap-1 overflow-x-auto pb-1 lg:flex" aria-label="题目导航">
+          <div className="mt-4 hidden justify-start gap-1 overflow-x-auto pb-1 lg:flex" aria-label="题目导航">
             {Array.from({ length: totalQuestions }, (_, index) => (
               <button
                 key={`question-${index + 1}`}
                 type="button"
-                className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold ${index === currentIndex ? "bg-[#2e2217] text-[#f7efe3]" : answers[index] !== null ? "bg-[#9f7b52] text-white" : "bg-white/70 text-[#6b5a44]"}`}
+                className={`h-8 min-w-8 rounded-lg px-2 text-left text-xs font-semibold ${index === currentIndex ? "bg-[#2e2217] text-[#f7efe3]" : answers[index] !== null ? "bg-[#9f7b52] text-white" : "bg-white/70 text-[#6b5a44]"}`}
                 onClick={() => jumpToQuestion(index)}
                 aria-label={`跳转到第 ${index + 1} 题`}
               >
