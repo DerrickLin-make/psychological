@@ -6,6 +6,7 @@ import type {
   ScaleDimension,
   ScaleQuestion,
 } from "@/data/scales";
+import { getScl90Conclusion, getScl90Level, SCL90_FACTORS } from "@/lib/scl90-report";
 
 type ScoredDimension = {
   key: string;
@@ -86,7 +87,17 @@ export type CustomScaleResult = {
   metrics?: Array<{ label: string; value: string | number }>;
 };
 
-export type ScaleResult = SumScaleResult | ProfileScaleResult | MbtiScaleResult | CustomScaleResult;
+export type Scl90Section = CustomSection & { level: string };
+
+export type Scl90ScaleResult = Omit<CustomScaleResult, "sections"> & {
+  instrument: "scl90";
+  overallMean: number;
+  positiveCount: number;
+  positiveMean: number;
+  sections: Scl90Section[];
+};
+
+export type ScaleResult = SumScaleResult | ProfileScaleResult | MbtiScaleResult | CustomScaleResult | Scl90ScaleResult;
 
 function optionsFor(scale: ScaleDefinition, question: ScaleQuestion) {
   return question.options ?? scale.options;
@@ -365,7 +376,7 @@ function scorePsqi(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleR
   };
 }
 
-function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleResult {
+function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): Scl90ScaleResult {
   const responseScores = answers.map((answer, index) => numericAnswer(answer, `Answer ${index + 1}`));
   const scores = responseScores.map((score) => score - 1);
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
@@ -374,26 +385,18 @@ function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScale
   const positiveMean = positiveCount === 0
     ? 0
     : positiveScores.reduce((sum, score) => sum + score, 0) / positiveCount;
-  const factorDefinitions = [
-    ["F1", "躯体化", [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58]],
-    ["F2", "强迫症状", [3, 9, 10, 28, 38, 45, 46, 51, 55, 65]],
-    ["F3", "人际关系敏感", [6, 21, 34, 36, 37, 41, 61, 69, 73]],
-    ["F4", "抑郁", [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79]],
-    ["F5", "焦虑", [2, 17, 23, 33, 39, 57, 72, 78, 80, 86]],
-    ["F6", "敌对", [11, 24, 63, 67, 74, 81]],
-    ["F7", "恐怖", [13, 25, 47, 50, 70, 75, 82]],
-    ["F8", "偏执", [8, 18, 43, 68, 76, 83]],
-    ["F9", "精神病性", [7, 16, 35, 62, 77, 84, 85, 87, 88, 90]],
-    ["F10", "睡眠及饮食", [19, 44, 59, 60, 64, 66, 89]],
-  ] as const;
-  const sections = factorDefinitions.map(([key, label, indexes]) => ({
-    key,
-    label,
-    score: Number((indexes.reduce((sum, item) => sum + scores[item - 1], 0) / indexes.length).toFixed(2)),
-    maxScore: 4,
-  }));
+  const sections = SCL90_FACTORS.map((factor) => {
+    const score = Number((factor.items.reduce((sum, item) => sum + scores[item - 1], 0) / factor.items.length).toFixed(2));
+    return {
+      key: factor.key,
+      label: factor.name,
+      score,
+      maxScore: 4,
+      level: getScl90Level(score),
+    };
+  });
   const mean = totalScore / 90;
-  const label = mean <= 0.5 ? "症状感受不明显" : mean <= 1.5 ? "有轻微症状感受" : mean <= 2.5 ? "轻到中度症状" : mean <= 3.5 ? "中到重度症状" : "症状频度和强度较高";
+  const label = getScl90Conclusion(mean);
 
   return {
     kind: "custom",
@@ -408,6 +411,10 @@ function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScale
       { label: "阳性症状均分", value: positiveMean.toFixed(2) },
     ],
     sections,
+    instrument: "scl90",
+    overallMean: Number(mean.toFixed(2)),
+    positiveCount,
+    positiveMean: Number(positiveMean.toFixed(2)),
   };
 }
 

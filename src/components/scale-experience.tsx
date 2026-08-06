@@ -4,7 +4,9 @@ import Link from "next/link";
 import { toPng } from "html-to-image";
 import { useRef, useState } from "react";
 import type { MbtiQuestion, ScaleAnswer, ScaleDefinition, ScaleQuestion } from "@/data/scales";
+import { Scl90Report } from "@/components/scl90-report";
 import { scoreScale, type ScaleResult } from "@/lib/scoring";
+import { isScl90Result, type Scl90Profile } from "@/lib/scl90-report";
 
 type ScaleExperienceProps = {
   scale: ScaleDefinition;
@@ -175,7 +177,11 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [completedAt, setCompletedAt] = useState<number | null>(null);
+  const [profile, setProfile] = useState<Scl90Profile>({});
   const reportRef = useRef<HTMLDivElement>(null);
+  const isScl90 = scale.slug === "scl-90";
 
   const reset = () => {
     setStage("intro");
@@ -184,11 +190,15 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     setResult(null);
     setError("");
     setSaveMessage("");
+    setStartedAt(null);
+    setCompletedAt(null);
+    setProfile({});
   };
 
   const finish = (nextAnswers: AnswerState) => {
     try {
       setResult(scoreScale(scale, nextAnswers as ScaleAnswer[]));
+      setCompletedAt(Date.now());
       setError("");
       setStage("result");
     } catch (cause) {
@@ -278,7 +288,43 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
               <p className="mt-2">预计用时约 {scale.estimatedMinutes} 分钟，共 {totalQuestions} 题。</p>
               <p className="mt-2">本测评仅供自我筛查和自我觉察参考，不能替代专业诊断。</p>
             </div>
-            <button type="button" className="primary-button mt-8" onClick={() => setStage("question")}>开始测试</button>
+            {isScl90 ? (
+              <div className="mt-8 rounded-2xl border border-[#d8ccb8] bg-white/45 p-5">
+                <p className="text-sm font-semibold text-[#4d3a28]">可选匿名信息</p>
+                <p className="mt-2 text-xs leading-6 text-[#6a5540]">仅用于让报告更完整，不填写也可以完成测评，不会采集姓名或联系方式。</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm text-[#4d3a28]">
+                    <span className="mb-2 block text-xs text-[#6a5540]">年龄段</span>
+                    <select
+                      value={profile.age ?? ""}
+                      onChange={(event) => setProfile((current) => ({ ...current, age: event.target.value || undefined }))}
+                      className="w-full rounded-xl border border-[#d8ccb8] bg-white/75 px-3 py-3 outline-none focus:border-[#8f6c48]"
+                    >
+                      <option value="">不填写</option>
+                      <option value="18 岁以下">18 岁以下</option>
+                      <option value="18–25 岁">18–25 岁</option>
+                      <option value="26–35 岁">26–35 岁</option>
+                      <option value="36–45 岁">36–45 岁</option>
+                      <option value="46 岁及以上">46 岁及以上</option>
+                    </select>
+                  </label>
+                  <label className="text-sm text-[#4d3a28]">
+                    <span className="mb-2 block text-xs text-[#6a5540]">性别</span>
+                    <select
+                      value={profile.gender ?? ""}
+                      onChange={(event) => setProfile((current) => ({ ...current, gender: event.target.value || undefined }))}
+                      className="w-full rounded-xl border border-[#d8ccb8] bg-white/75 px-3 py-3 outline-none focus:border-[#8f6c48]"
+                    >
+                      <option value="">不填写</option>
+                      <option value="女">女</option>
+                      <option value="男">男</option>
+                      <option value="其他/不便说明">其他/不便说明</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            ) : null}
+            <button type="button" className="primary-button mt-8" onClick={() => { setStartedAt(Date.now()); setStage("question"); }}>开始测试</button>
           </div>
         </section>
       </main>
@@ -363,6 +409,9 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
 
   if (!result) return null;
 
+  const scl90Result = isScl90 && isScl90Result(result) ? result : null;
+  const elapsedSeconds = startedAt && completedAt ? Math.round((completedAt - startedAt) / 1000) : null;
+
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div className="aurora aurora-one" />
@@ -372,6 +421,18 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
           <Link href="/scales" className="text-sm font-semibold text-[#6a5540]">返回量表列表</Link>
           <button type="button" className="secondary-button" onClick={reset}>重新测试</button>
         </header>
+        {scl90Result ? (
+          <div className="mt-8">
+            <Scl90Report
+              result={scl90Result}
+              answers={answers as ScaleAnswer[]}
+              profile={profile}
+              completedAt={completedAt}
+              elapsedSeconds={elapsedSeconds}
+              reportRef={reportRef}
+            />
+          </div>
+        ) : (
         <div ref={reportRef} className="report-surface mt-8 rounded-[36px] border border-[#d8ccb8] p-6 sm:p-10">
           <p className="text-xs font-semibold tracking-[0.24em] text-[#7b6246] uppercase">{scale.shortTitle} / Result</p>
           <h1 className="mt-5 font-serif text-4xl leading-tight text-[#23170e]">{scale.title}</h1>
@@ -392,6 +453,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
             <p className="mt-2">本结果仅用于自我筛查和自我觉察参考，不能替代专业心理咨询、临床诊断或医疗建议。</p>
           </div>
         </div>
+        )}
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" className="primary-button" onClick={saveReport} disabled={isSaving}>{isSaving ? "生成中…" : "保存结果图片"}</button>
           <button type="button" className="secondary-button" onClick={reset}>再测一次</button>

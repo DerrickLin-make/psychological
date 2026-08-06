@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "version": "2.0",
+  "envId": "test-6glfp5fs533622b5",
+  "functionRoot": "./functions",
+  "functions": [
+    {
+      "name": "scl90-analysis",
+      "dir": "./functions/scl90-analysis",
+      "type": "HTTP",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "memorySize": 256,
+      "handler": "index.main",
+      "envVariables": {
+        "DEEPSEEK_API_KEY": "{{env.DEEPSEEK_API_KEY}}",
+        "DEEPSEEK_MODEL": "{{env.DEEPSEEK_MODEL}}",
+        "ALLOWED_ORIGINS": "{{env.ALLOWED_ORIGINS}}"
+      }
+    }
+  ]
+}
