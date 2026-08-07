@@ -1,10 +1,7 @@
 import { parseScl90Analysis, type Scl90Analysis, type Scl90AnalysisRequest } from "@/lib/scl90-report";
 
 export async function requestScl90Analysis(request: Scl90AnalysisRequest): Promise<Scl90Analysis> {
-  const endpoint = process.env.NEXT_PUBLIC_SCL90_ANALYSIS_URL;
-  if (!endpoint) {
-    throw new Error("AI 分析接口尚未配置。");
-  }
+  const endpoint = process.env.NEXT_PUBLIC_SCL90_ANALYSIS_URL || "/api/scl90-analysis";
 
   const response = await fetch(endpoint, {
     method: "POST",

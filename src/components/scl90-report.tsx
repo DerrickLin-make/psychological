@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import { requestScl90Analysis } from "@/lib/scl90-analysis";
 import {
   buildFallbackScl90Analysis,
@@ -136,7 +136,7 @@ export function Scl90Report({
   const [aiConsent, setAiConsent] = useState(true);
   const conclusion = getScl90Conclusion(result.overallMean);
 
-  async function generateAnalysis() {
+  const generateAnalysis = useCallback(async () => {
     if (!aiConsent) {
       setAnalysisError("请先勾选同意发送测评数据，再生成 AI 分析。");
       return;
@@ -157,7 +157,13 @@ export function Scl90Report({
       setAnalysisStatus("error");
       setAnalysisError(error instanceof Error ? error.message : "AI 分析暂时不可用，请稍后重试。");
     }
-  }
+  }, [aiConsent, answers, profile, result]);
+
+  useEffect(() => {
+    if (!aiConsent || analysisStatus !== "idle") return;
+    const timer = window.setTimeout(() => void generateAnalysis(), 0);
+    return () => window.clearTimeout(timer);
+  }, [aiConsent, analysisStatus, generateAnalysis]);
 
   return (
     <>
@@ -242,14 +248,14 @@ export function Scl90Report({
       <section className="scl90-ai-control" aria-label="AI 分析设置">
         <div>
           <p className="scl90-ai-title">DeepSeek AI 分析</p>
-          <p className="scl90-ai-description">将发送 90 道题的作答选项、统计结果和可选匿名信息，用于生成个性化报告解析。数据不会在本网站保存。</p>
+          <p className="scl90-ai-description">报告打开后会自动尝试生成 AI 解析。将发送 90 道题的作答选项、统计结果和可选匿名信息，数据不会在本网站保存。</p>
         </div>
         <label className="scl90-consent">
           <input type="checkbox" checked={aiConsent} onChange={(event) => setAiConsent(event.target.checked)} />
           <span>同意发送测评数据进行 AI 分析</span>
         </label>
         <button type="button" className="primary-button" onClick={generateAnalysis} disabled={analysisStatus === "loading"}>
-          {analysisStatus === "loading" ? "分析生成中…" : analysisStatus === "success" ? "重新生成分析" : "生成 AI 分析"}
+          {analysisStatus === "loading" ? "分析生成中…" : analysisStatus === "success" ? "重新生成分析" : analysisStatus === "error" ? "重试 AI 分析" : "生成 AI 分析"}
         </button>
         {analysisStatus === "success" ? <p className="scl90-ai-success">AI 分析已更新到报告中。</p> : null}
         {analysisError ? <p className="scl90-ai-error">{analysisError} 当前报告仍保留本地基础解析，可稍后重试。</p> : null}
