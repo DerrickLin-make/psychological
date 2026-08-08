@@ -14,18 +14,18 @@ export const SCL90_FACTORS = [
 ] as const;
 
 export function getScl90Level(score: number) {
-  if (score <= 0.5) return "不明显";
-  if (score <= 1.5) return "轻度";
-  if (score <= 2.5) return "中度";
-  if (score <= 3.5) return "偏重";
-  return "重度";
+  if (score < 2) return "阴性";
+  if (score < 3) return "轻度阳性";
+  if (score < 4) return "中度阳性";
+  if (score < 4.5) return "偏重阳性";
+  return "重度阳性";
 }
 
 export function getScl90Conclusion(mean: number) {
-  if (mean <= 0.5) return "阴性";
-  if (mean <= 1.5) return "轻度阳性";
-  if (mean <= 2.5) return "中度阳性";
-  if (mean <= 3.5) return "偏重阳性";
+  if (mean < 2) return "阴性";
+  if (mean < 3) return "轻度阳性";
+  if (mean < 4) return "中度阳性";
+  if (mean < 4.5) return "偏重阳性";
   return "重度阳性";
 }
 
@@ -83,7 +83,9 @@ export function parseScl90Analysis(value: unknown): Scl90Analysis | null {
     }).slice(0, 10)
     : [];
 
-  if (!overallSummary || !riskNotice || !closingMessage || factorAnalyses.length === 0 || recommendations.length === 0) {
+  const factorKeys = new Set(factorAnalyses.map((factor) => factor.key));
+  const hasAllFactors = SCL90_FACTORS.every((factor) => factorKeys.has(factor.key));
+  if (!overallSummary || !riskNotice || !closingMessage || !hasAllFactors || recommendations.length === 0) {
     return null;
   }
 
@@ -92,12 +94,12 @@ export function parseScl90Analysis(value: unknown): Scl90Analysis | null {
 
 export function buildFallbackScl90Analysis(result: Scl90ScaleResult): Scl90Analysis {
   return {
-    overallSummary: `本次测评总症状指数为 ${result.overallMean.toFixed(2)}，阳性项目数为 ${result.positiveCount}，阳性症状均分为 ${result.positiveMean.toFixed(2)}。结果显示为“${result.label}”，建议结合近期生活事件和实际困扰综合理解。`,
+    overallSummary: `本次测评总分为 ${result.totalScore}（满分 ${result.maxScore}），总症状指数为 ${result.overallMean.toFixed(2)}，阳性项目数为 ${result.positiveCount}，阴性项目数为 ${result.negativeCount}，阳性症状均分为 ${result.positiveMean.toFixed(2)}。结果显示为“${result.label}”，建议结合近期生活事件和实际困扰综合理解。`,
     factorAnalyses: result.sections.map((section) => ({
       key: section.key,
       title: section.label,
       level: section.level,
-      explanation: `该维度平均分为 ${section.score.toFixed(2)}，当前表现为${section.level}。这只代表近一周的自我感受，不能单独用于判断临床问题。`,
+      explanation: `该维度原始得分为 ${section.rawScore}，均分为 ${section.score.toFixed(2)}，当前表现为${section.level}。这只代表近一周的自我感受，不能单独用于判断临床问题。`,
     })),
     recommendations: [
       "优先关注得分相对较高、并且已经影响睡眠、工作或人际关系的具体体验。",

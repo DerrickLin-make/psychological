@@ -17,40 +17,43 @@ const FACTORS = [
 ];
 
 function getLevel(score) {
-  if (score <= 0.5) return "不明显";
-  if (score <= 1.5) return "轻度";
-  if (score <= 2.5) return "中度";
-  if (score <= 3.5) return "偏重";
-  return "重度";
+  if (score < 2) return "阴性";
+  if (score < 3) return "轻度阳性";
+  if (score < 4) return "中度阳性";
+  if (score < 4.5) return "偏重阳性";
+  return "重度阳性";
 }
 
 function getConclusion(mean) {
-  if (mean <= 0.5) return "阴性";
-  if (mean <= 1.5) return "轻度阳性";
-  if (mean <= 2.5) return "中度阳性";
-  if (mean <= 3.5) return "偏重阳性";
+  if (mean < 2) return "阴性";
+  if (mean < 3) return "轻度阳性";
+  if (mean < 4) return "中度阳性";
+  if (mean < 4.5) return "偏重阳性";
   return "重度阳性";
 }
 
 function calculateScl90(answers) {
-  const scores = answers.map((answer) => answer - 1);
+  const scores = answers;
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
-  const positiveScores = scores.filter((score) => score > 0);
+  const positiveScores = scores.filter((score) => score >= 2);
   const positiveCount = positiveScores.length;
+  const negativeCount = scores.length - positiveCount;
   const positiveMean = positiveCount === 0
     ? 0
     : positiveScores.reduce((sum, score) => sum + score, 0) / positiveCount;
   const overallMean = totalScore / 90;
   const sections = FACTORS.map((factor) => {
-    const score = Number((factor.items.reduce((sum, item) => sum + scores[item - 1], 0) / factor.items.length).toFixed(2));
-    return { key: factor.key, name: factor.name, score, level: getLevel(score) };
+    const rawScore = factor.items.reduce((sum, item) => sum + scores[item - 1], 0);
+    const score = Number((rawScore / factor.items.length).toFixed(2));
+    return { key: factor.key, name: factor.name, rawScore, itemCount: factor.items.length, score, level: getLevel(score) };
   });
 
   return {
     totalScore,
-    maxScore: 360,
+    maxScore: 450,
     overallMean: Number(overallMean.toFixed(2)),
     positiveCount,
+    negativeCount,
     positiveMean: Number(positiveMean.toFixed(2)),
     label: getConclusion(overallMean),
     sections,
@@ -77,6 +80,8 @@ function buildPrompt(payload, score) {
   const factorScores = score.sections.map((section) => ({
     key: section.key,
     name: section.name,
+    rawScore: section.rawScore,
+    itemCount: section.itemCount,
     score: section.score,
     level: section.level,
   }));
@@ -91,12 +96,14 @@ function buildPrompt(payload, score) {
 4. 只输出 JSON，不要 Markdown，不要代码围栏。JSON 结构必须是：
 {
   "overallSummary": "总体解读",
-  "factorAnalyses": [{"key":"F1","title":"躯体化","level":"轻度","explanation":"维度解释"}],
+  "factorAnalyses": [{"key":"F1","title":"躯体化","level":"轻度阳性","explanation":"维度解释"}],
   "recommendations": ["建议一", "建议二", "建议三"],
   "riskNotice": "风险与使用边界说明",
   "closingMessage": "结语"
 }
 5. factorAnalyses 必须覆盖 F1 到 F10，每项只写对应维度，不要编造具体症状发生频率。
+6. 计分口径是原始 1–5 分：总分范围 0–450；答案为 2–5 的项目计入阳性项目数；因子“得分”使用各题原始分相加，“均分”使用因子平均分。
+7. 报告风格要对应“总体结论—测评得分—各因子解析—综合建议—风险边界—寄语”，解释必须严格围绕给出的分数和近一周自我感受。
 
 测评数据：
 ${JSON.stringify({ profile: payload.profile, score, factorScores, answerValues }, null, 2)}`;
@@ -129,7 +136,9 @@ function validateAnalysis(value) {
     })).filter((item) => item.key && item.title && item.level && item.explanation).slice(0, 10)
     : [];
 
-  if (!overallSummary || !riskNotice || !closingMessage || recommendations.length === 0 || factorAnalyses.length < 10) {
+  const factorKeys = new Set(factorAnalyses.map((factor) => factor.key));
+  const hasAllFactors = FACTORS.every((factor) => factorKeys.has(factor.key));
+  if (!overallSummary || !riskNotice || !closingMessage || recommendations.length === 0 || !hasAllFactors) {
     return null;
   }
   return { overallSummary, factorAnalyses, recommendations, riskNotice, closingMessage };

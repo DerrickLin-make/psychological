@@ -87,12 +87,13 @@ export type CustomScaleResult = {
   metrics?: Array<{ label: string; value: string | number }>;
 };
 
-export type Scl90Section = CustomSection & { level: string };
+export type Scl90Section = CustomSection & { level: string; rawScore: number; itemCount: number };
 
 export type Scl90ScaleResult = Omit<CustomScaleResult, "sections"> & {
   instrument: "scl90";
   overallMean: number;
   positiveCount: number;
+  negativeCount: number;
   positiveMean: number;
   sections: Scl90Section[];
 };
@@ -378,42 +379,48 @@ function scorePsqi(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleR
 
 function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): Scl90ScaleResult {
   const responseScores = answers.map((answer, index) => numericAnswer(answer, `Answer ${index + 1}`));
-  const scores = responseScores.map((score) => score - 1);
-  const totalScore = scores.reduce((sum, score) => sum + score, 0);
-  const positiveScores = scores.filter((score) => score > 0);
+  const totalScore = responseScores.reduce((sum, score) => sum + score, 0);
+  const positiveScores = responseScores.filter((score) => score >= 2);
   const positiveCount = positiveScores.length;
+  const negativeCount = responseScores.length - positiveCount;
   const positiveMean = positiveCount === 0
     ? 0
     : positiveScores.reduce((sum, score) => sum + score, 0) / positiveCount;
   const sections = SCL90_FACTORS.map((factor) => {
-    const score = Number((factor.items.reduce((sum, item) => sum + scores[item - 1], 0) / factor.items.length).toFixed(2));
+    const rawScore = factor.items.reduce((sum, item) => sum + responseScores[item - 1], 0);
+    const score = Number((rawScore / factor.items.length).toFixed(2));
     return {
       key: factor.key,
       label: factor.name,
       score,
-      maxScore: 4,
+      rawScore,
+      itemCount: factor.items.length,
+      maxScore: 5,
       level: getScl90Level(score),
     };
   });
-  const mean = totalScore / 90;
+  const mean = totalScore / responseScores.length;
   const label = getScl90Conclusion(mean);
+  const maxScore = responseScores.length * Math.max(...scale.options.map((option) => option.value));
 
   return {
     kind: "custom",
     totalScore,
-    maxScore: 360,
-    normalized: totalScore / 360,
+    maxScore,
+    normalized: maxScore > 0 ? totalScore / maxScore : 0,
     label,
-    summary: `总症状指数（总均分）为 ${mean.toFixed(2)}，阳性项目数为 ${positiveCount}，阳性症状均分为 ${positiveMean.toFixed(2)}。`,
+    summary: `总分为 ${totalScore}，总症状指数（总均分）为 ${mean.toFixed(2)}，阳性项目数为 ${positiveCount}，阴性项目数为 ${negativeCount}，阳性症状均分为 ${positiveMean.toFixed(2)}。`,
     metrics: [
       { label: "总症状指数", value: mean.toFixed(2) },
       { label: "阳性项目数", value: positiveCount },
+      { label: "阴性项目数", value: negativeCount },
       { label: "阳性症状均分", value: positiveMean.toFixed(2) },
     ],
     sections,
     instrument: "scl90",
     overallMean: Number(mean.toFixed(2)),
     positiveCount,
+    negativeCount,
     positiveMean: Number(positiveMean.toFixed(2)),
   };
 }

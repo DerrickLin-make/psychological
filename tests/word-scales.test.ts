@@ -111,8 +111,8 @@ test("EPDS, SCL-90, BDI-II, MBTI and profile scales score without invented answe
   assert.equal(epdsRiskResult.notices?.length, 1);
   const sclResult = scoreScale(scl90, Array.from({ length: 90 }, () => 1));
   assert.equal(sclResult.kind, "custom");
-  assert.equal(sclResult.totalScore, 0);
-  assert.equal(sclResult.maxScore, 360);
+  assert.equal(sclResult.totalScore, 90);
+  assert.equal(sclResult.maxScore, 450);
   assert.equal(scoreScale(bdi, Array.from({ length: 21 }, () => 0)).kind, "sum");
   assert.equal(scoreScale(mbti, Array.from({ length: 93 }, () => 0)).kind, "mbti");
   assert.equal(scoreScale(neo, Array.from({ length: 60 }, () => 3)).kind, "profile");

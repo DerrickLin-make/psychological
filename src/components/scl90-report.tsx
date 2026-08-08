@@ -45,14 +45,14 @@ function chartPoints(result: Scl90ScaleResult) {
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
   const x = (index: number) => padding.left + (innerWidth / Math.max(result.sections.length - 1, 1)) * index;
-  const y = (score: number) => padding.top + innerHeight - (score / 4) * innerHeight;
+  const y = (score: number) => padding.top + innerHeight - ((score - 1) / 4) * innerHeight;
   return {
     width,
     height,
     padding,
     points: result.sections.map((section, index) => `${x(index)},${y(section.score)}`).join(" "),
     dots: result.sections.map((section, index) => ({ x: x(index), y: y(section.score), section })),
-    horizontalLines: [0, 1, 2, 3, 4].map((value) => ({ value, y: y(value) })),
+    horizontalLines: [1, 2, 3, 4, 5].map((value) => ({ value, y: y(value) })),
   };
 }
 
@@ -100,21 +100,23 @@ function ProfileSummary({ profile }: { profile: Scl90Profile }) {
   );
 }
 
-function ReportAnalysis({ analysis }: { analysis: Scl90Analysis }) {
+function ReportAnalysis({ analysis, result }: { analysis: Scl90Analysis; result: Scl90ScaleResult }) {
+  const sections = new Map(result.sections.map((section) => [section.key, section]));
+
   return (
     <>
       <p className="scl90-analysis-summary">{analysis.overallSummary}</p>
       <div className="scl90-analysis-table">
         <div className="scl90-analysis-row scl90-analysis-head">
           <span>指标</span>
-          <span>等级</span>
+          <span>得分</span>
           <span>说明</span>
         </div>
         {analysis.factorAnalyses.map((factor) => (
           <div className="scl90-analysis-row" key={factor.key}>
             <strong>{factor.title}</strong>
-            <span className="scl90-level">{factor.level}</span>
-            <p>{factor.explanation}</p>
+            <span className="scl90-level">{sections.get(factor.key)?.rawScore ?? "—"}</span>
+            <p>{factor.level}：{factor.explanation}</p>
           </div>
         ))}
       </div>
@@ -190,7 +192,7 @@ export function Scl90Report({
           <div>
             <p className="scl90-muted-label">测评结果</p>
             <p className="scl90-conclusion-label">{conclusion}</p>
-            <p className="scl90-conclusion-text">本次测评总症状指数为 {result.overallMean.toFixed(2)}，阳性项目数为 {result.positiveCount}。</p>
+            <p className="scl90-conclusion-text">本次测评总症状指数为 {result.overallMean.toFixed(2)}，阳性项目数为 {result.positiveCount}，阴性项目数为 {result.negativeCount}。</p>
           </div>
           <div className="scl90-conclusion-score">
             <span>总分</span>
@@ -206,19 +208,20 @@ export function Scl90Report({
 
         <section className="scl90-report-section">
           <SectionTitle>测评得分</SectionTitle>
-          <div className="scl90-score-table">
-            <div className="scl90-score-row scl90-score-head">
-              <span>指标</span><span>得分</span><span>参考范围</span><span>当前水平</span>
+            <div className="scl90-score-table">
+              <div className="scl90-score-row scl90-score-head">
+              <span>指标</span><span>得分</span><span>均分</span><span>得分范围</span>
             </div>
-            <div className="scl90-score-row"><strong>总症状指数</strong><span>{result.totalScore}</span><span>0–360</span><span>{conclusion}</span></div>
-            <div className="scl90-score-row"><strong>阳性项目数</strong><span>{result.positiveCount}</span><span>0–90</span><span>项目数</span></div>
-            <div className="scl90-score-row"><strong>阳性症状均分</strong><span>{result.positiveMean.toFixed(2)}</span><span>0–4</span><span>阳性项目平均分</span></div>
+            <div className="scl90-score-row"><strong>总症状指数</strong><span>{result.totalScore}</span><span>{result.overallMean.toFixed(2)}</span><span>0–450</span></div>
+            <div className="scl90-score-row"><strong>阳性项目数</strong><span>{result.positiveCount}</span><span>—</span><span>0–90</span></div>
+            <div className="scl90-score-row"><strong>阴性项目数</strong><span>{result.negativeCount}</span><span>—</span><span>0–90</span></div>
+            <div className="scl90-score-row"><strong>阳性症状均分</strong><span>—</span><span>{result.positiveMean.toFixed(2)}</span><span>1–5</span></div>
             {result.sections.map((section) => (
               <div className="scl90-score-row" key={section.key}>
                 <strong>{section.key} {section.label}</strong>
+                <span>{section.rawScore}</span>
                 <span>{section.score.toFixed(2)}</span>
-                <span>0–4</span>
-                <span>{section.level}</span>
+                <span>1–5</span>
               </div>
             ))}
           </div>
@@ -226,7 +229,7 @@ export function Scl90Report({
 
         <section className="scl90-report-section">
           <SectionTitle>报告解析</SectionTitle>
-          <ReportAnalysis analysis={analysis} />
+          <ReportAnalysis analysis={analysis} result={result} />
         </section>
 
         <section className="scl90-report-section">
