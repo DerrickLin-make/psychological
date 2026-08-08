@@ -45,6 +45,26 @@ test("SCL-90 keeps all 1 answers negative and preserves the raw five-point scale
   assert.deepEqual(result.sections.map((section) => section.level), Array.from({ length: 10 }, () => "阴性"));
 });
 
+test("SCL-90 matches the reference report's total-score metrics", () => {
+  const answers = [
+    ...Array(34).fill(1),
+    ...Array(42).fill(3),
+    ...Array(14).fill(4),
+  ];
+  const result = scoreScale(scl90Scale, answers);
+
+  assert.equal(isScl90Result(result), true);
+  if (!isScl90Result(result)) return;
+
+  assert.equal(result.totalScore, 216);
+  assert.equal(result.maxScore, 450);
+  assert.equal(result.overallMean, 2.4);
+  assert.equal(result.positiveCount, 56);
+  assert.equal(result.negativeCount, 34);
+  assert.equal(result.positiveMean, 3.25);
+  assert.equal(result.label, "轻度阳性");
+});
+
 test("SCL-90 fallback analysis is complete when AI is unavailable", () => {
   const result = scoreAll(1);
   assert.equal(isScl90Result(result), true);
