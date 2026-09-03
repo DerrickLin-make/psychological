@@ -1,21 +1,14 @@
 "use client";
 
 import type { RefObject } from "react";
-import { useCallback, useEffect, useState } from "react";
-import type { ScaleAnswer, ScaleDefinition } from "@/data/scales";
+import type { ScaleDefinition } from "@/data/scales";
 import { ClinicalReport, ReportSection, type ReportMetric } from "@/components/clinical-report";
 import type { ScaleResult } from "@/lib/scoring";
-import {
-  buildFallbackScaleAnalysis,
-  buildScaleAnalysisRequest,
-  requestScaleAnalysis,
-  type ScaleAnalysis,
-} from "@/lib/scale-analysis";
+import { buildFallbackScaleAnalysis, type ScaleAnalysis } from "@/lib/scale-analysis";
 
 type ScaleReportProps = {
   scale: ScaleDefinition;
   result: ScaleResult;
-  answers: ScaleAnswer[];
   completedAt: number | null;
   elapsedSeconds: number | null;
   reportRef: RefObject<HTMLDivElement | null>;
@@ -26,10 +19,10 @@ function formatScore(score: number) {
   return Number.isInteger(score) ? String(score) : score.toFixed(2);
 }
 
-function resultLabel(result: ScaleResult) {
+function resultLabel(scale: ScaleDefinition, result: ScaleResult) {
   if (result.kind === "sum") return result.band.label;
   if (result.kind === "mbti") return `${result.typeCode} · ${result.typeProfile.nickname}`;
-  if (result.kind === "profile") return result.temperament?.label ?? "人格维度画像";
+  if (result.kind === "profile") return result.temperament?.label ?? `${scale.shortTitle}多维画像`;
   return result.label;
 }
 
@@ -62,8 +55,8 @@ function reportMetrics(result: ScaleResult): ReportMetric[] {
   if (result.kind === "profile") {
     const strongest = [...result.dimensions].sort((left, right) => right.score - left.score)[0];
     return [
-      { label: "总分", value: formatScore(result.totalScore), hint: `满分：${result.maxScore}` },
-      { label: "突出维度", value: strongest?.name ?? "未形成", hint: strongest ? `得分：${formatScore(strongest.score)}` : "" },
+      { label: "题目合计", value: formatScore(result.totalScore), hint: "仅用于记录，不作整体等级解释" },
+      { label: "最高维度", value: strongest?.name ?? "未形成", hint: strongest ? `得分：${formatScore(strongest.score)}` : "" },
       { label: "维度数量", value: result.dimensions.length, hint: "已完成分析" },
     ];
   }
@@ -200,102 +193,77 @@ function AnalysisList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-export function ScaleReport({ scale, result, answers, completedAt, elapsedSeconds, reportRef, onDownload }: ScaleReportProps) {
-  const [analysis, setAnalysis] = useState<ScaleAnalysis>(() => buildFallbackScaleAnalysis(scale, result));
-  const [analysisStatus, setAnalysisStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [analysisError, setAnalysisError] = useState("");
-
-  const generateAnalysis = useCallback(async () => {
-    setAnalysisStatus("loading");
-    setAnalysisError("");
-    try {
-      const nextAnalysis = await requestScaleAnalysis(buildScaleAnalysisRequest(scale, result, answers));
-      setAnalysis(nextAnalysis);
-      setAnalysisStatus("success");
-    } catch (error) {
-      setAnalysisStatus("error");
-      setAnalysisError(error instanceof Error ? error.message : "AI 分析暂时不可用，请稍后重试。");
-    }
-  }, [answers, result, scale]);
-
-  useEffect(() => {
-    if (analysisStatus !== "idle") return;
-    const timer = window.setTimeout(() => void generateAnalysis(), 0);
-    return () => window.clearTimeout(timer);
-  }, [analysisStatus, generateAnalysis]);
+export function ScaleReport({ scale, result, completedAt, elapsedSeconds, reportRef, onDownload }: ScaleReportProps) {
+  const analysis: ScaleAnalysis = buildFallbackScaleAnalysis(scale, result);
 
   return (
-    <>
-      <ClinicalReport
-        scaleSlug={scale.slug}
-        category={scale.category}
-        title={scale.title}
-        questionCount={scale.mbtiQuestions?.length ?? scale.questions.length}
-        resultLabel={resultLabel(result)}
-        resultSummary={resultSummary(result)}
-        metrics={reportMetrics(result)}
-        completedAt={completedAt}
-        elapsedSeconds={elapsedSeconds}
-        reportRef={reportRef}
-        onDownload={onDownload}
-      >
-        <div className="report-two-column">
-          <ReportSection title="结果趋势" eyebrow="分数分布">
-            <ScoreBars result={result} />
+    <ClinicalReport
+      scaleSlug={scale.slug}
+      category={scale.category}
+      title={scale.title}
+      questionCount={scale.mbtiQuestions?.length ?? scale.questions.length}
+      resultLabel={resultLabel(scale, result)}
+      resultSummary={resultSummary(result)}
+      metrics={reportMetrics(result)}
+      completedAt={completedAt}
+      elapsedSeconds={elapsedSeconds}
+      reportRef={reportRef}
+      onDownload={onDownload}
+    >
+      <div className="report-two-column">
+        <ReportSection title="结果趋势" eyebrow="分数分布">
+          <ScoreBars result={result} />
+        </ReportSection>
+        <ReportSection title="测评得分" eyebrow="数据明细">
+          <ScoreTable result={result} />
+        </ReportSection>
+      </div>
+
+      <div className="report-lower-grid">
+        <ReportSection title="报告分析" eyebrow="本地分析">
+          <p className="report-analysis-summary">{analysis.overallSummary}</p>
+          <AnalysisTable analysis={analysis} />
+        </ReportSection>
+
+        <div className="report-lower-side">
+          <ReportSection title="综合建议" eyebrow="行动参考">
+            <div className="report-recommendations">
+              {analysis.recommendations.map((recommendation, index) => (
+                <p key={recommendation}><strong>{index + 1}</strong>{recommendation}</p>
+              ))}
+            </div>
           </ReportSection>
-          <ReportSection title="测评得分" eyebrow="数据明细">
-            <ScoreTable result={result} />
+
+          <ReportSection title="优势与关注" eyebrow="重点提示">
+            <AnalysisList title="可以利用的优势" items={analysis.strengths} />
+            <AnalysisList title="建议留意的变化" items={analysis.watchPoints} />
+          </ReportSection>
+
+          <ReportSection title="寄语" eyebrow="温馨提示">
+            <div className="report-closing-message">
+              <p>{analysis.closingMessage}</p>
+              <p className="report-risk-notice">{analysis.riskNotice}</p>
+            </div>
           </ReportSection>
         </div>
+      </div>
 
-        <div className="report-lower-grid">
-          <ReportSection title="报告分析" eyebrow={`DeepSeek AI 分析${analysisStatus === "loading" ? " · 生成中" : ""}`}>
-            <p className="report-analysis-summary">{analysis.overallSummary}</p>
-            <AnalysisTable analysis={analysis} />
-          </ReportSection>
-
-          <div className="report-lower-side">
-            <ReportSection title="综合建议" eyebrow="行动参考">
-              <div className="report-recommendations">
-                {analysis.recommendations.map((recommendation, index) => (
-                  <p key={recommendation}><strong>{index + 1}</strong>{recommendation}</p>
-                ))}
-              </div>
-            </ReportSection>
-
-            <ReportSection title="优势与关注" eyebrow="重点提示">
-              <AnalysisList title="可以利用的优势" items={analysis.strengths} />
-              <AnalysisList title="建议留意的变化" items={analysis.watchPoints} />
-            </ReportSection>
-
-            <ReportSection title="寄语" eyebrow="温馨提示">
-              <div className="report-closing-message">
-                <p>{analysis.closingMessage}</p>
-                <p className="report-risk-notice">{analysis.riskNotice}</p>
-              </div>
-            </ReportSection>
-          </div>
-        </div>
-
-        <ReportSection title="计分说明" eyebrow="使用提示">
-          <div className="report-note">
-            <p>{scale.scoringNote}</p>
-            <p>本结果仅用于自我筛查和自我觉察参考，不能替代专业心理咨询、临床诊断或医疗建议。</p>
+      {analysis.notices.length > 0 ? (
+        <ReportSection title="需要优先关注" eyebrow="安全提示">
+          <div className="report-alert report-alert-danger">
+            {analysis.notices.map((notice) => <p key={notice}>{notice}</p>)}
           </div>
         </ReportSection>
-      </ClinicalReport>
+      ) : null}
 
-      <section className="report-ai-panel" aria-label="AI 分析设置">
-        <div>
-          <p className="report-ai-title">DeepSeek AI 详细分析</p>
-          <p className="report-ai-description">报告会根据量表题目、匿名作答和已计算结果生成总体解读、分维度解释、优势、关注点和行动建议。</p>
+      <ReportSection title="计分说明" eyebrow="使用提示">
+        <div className="report-note">
+          <p>{scale.scoringNote}</p>
+          {scale.translationNote ? <p>{scale.translationNote}</p> : null}
+          {scale.sourceNote ? <p>{scale.sourceNote}</p> : null}
+          <p>本结果仅用于自我筛查和自我觉察参考，不能替代专业心理咨询、临床诊断或医疗建议。</p>
         </div>
-        <button type="button" className="primary-button" onClick={generateAnalysis} disabled={analysisStatus === "loading"}>
-          {analysisStatus === "loading" ? "详细分析生成中…" : analysisStatus === "success" ? "重新生成分析" : "重试 AI 分析"}
-        </button>
-        {analysisStatus === "success" ? <p className="report-ai-success">AI 详细分析已更新到报告中。</p> : null}
-        {analysisError ? <p className="report-ai-error">{analysisError} 当前报告仍保留本地基础分析。</p> : null}
-      </section>
-    </>
+      </ReportSection>
+    </ClinicalReport>
   );
 }

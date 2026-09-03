@@ -1,5 +1,6 @@
 import { aasScale } from "./aas-r";
 import { bdiScale } from "./bdi";
+import { evidenceBasedScales } from "./evidence-scales";
 import { epdsScale } from "./epds";
 import { fadScale } from "./fad";
 import { mbtiScale } from "./mbti";
@@ -27,6 +28,7 @@ export const scales = [
   epdsScale,
   scl90Scale,
   bdiScale,
+  ...evidenceBasedScales,
 ];
 
 export function getScaleBySlug(slug: string) {

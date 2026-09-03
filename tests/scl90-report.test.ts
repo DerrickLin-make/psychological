@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { scl90Scale } from "../src/data/scales/scl90";
-import { scoreScale, type Scl90ScaleResult } from "../src/lib/scoring";
-import { buildFallbackScl90Analysis, isScl90Result, parseScl90Analysis } from "../src/lib/scl90-report";
+import { scoreScale } from "../src/lib/scoring";
+import { buildFallbackScl90Analysis, isScl90Result } from "../src/lib/scl90-report";
 
 function scoreAll(value: number) {
   return scoreScale(scl90Scale, Array.from({ length: 90 }, () => value));
@@ -65,7 +65,7 @@ test("SCL-90 matches the reference report's total-score metrics", () => {
   assert.equal(result.label, "轻度阳性");
 });
 
-test("SCL-90 fallback analysis is complete when AI is unavailable", () => {
+test("SCL-90 local analysis is complete", () => {
   const result = scoreAll(1);
   assert.equal(isScl90Result(result), true);
   if (!isScl90Result(result)) return;
@@ -74,12 +74,4 @@ test("SCL-90 fallback analysis is complete when AI is unavailable", () => {
   assert.equal(fallback.factorAnalyses.length, 10);
   assert.equal(fallback.recommendations.length, 3);
   assert.match(fallback.riskNotice, /不构成医学诊断/);
-});
-
-test("SCL-90 AI response parser rejects incomplete model output", () => {
-  assert.equal(parseScl90Analysis({ overallSummary: "只有总评" }), null);
-
-  const result = scoreAll(2) as Scl90ScaleResult;
-  const fallback = buildFallbackScl90Analysis(result);
-  assert.deepEqual(parseScl90Analysis(fallback), fallback);
 });

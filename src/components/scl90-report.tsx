@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import type { RefObject } from "react";
 import { ClinicalReport, ReportSection } from "@/components/clinical-report";
-import { requestScl90Analysis } from "@/lib/scl90-analysis";
 import {
   buildFallbackScl90Analysis,
   getScl90Conclusion,
@@ -125,109 +124,59 @@ export function Scl90Report({
   reportRef,
   onDownload,
 }: Scl90ReportProps) {
-  const [analysis, setAnalysis] = useState<Scl90Analysis>(() => buildFallbackScl90Analysis(result));
-  const [analysisStatus, setAnalysisStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [analysisError, setAnalysisError] = useState("");
-  const [aiConsent, setAiConsent] = useState(true);
+  const analysis: Scl90Analysis = buildFallbackScl90Analysis(result);
   const conclusion = getScl90Conclusion(result.overallMean);
 
-  const generateAnalysis = useCallback(async () => {
-    if (!aiConsent) {
-      setAnalysisError("请先勾选同意发送测评数据，再生成 AI 分析。");
-      return;
-    }
-
-    setAnalysisStatus("loading");
-    setAnalysisError("");
-    try {
-      const nextAnalysis = await requestScl90Analysis({
-        scale: "scl90",
-        answers: answers.map((answer) => Number(answer)),
-        result,
-        profile,
-      });
-      setAnalysis(nextAnalysis);
-      setAnalysisStatus("success");
-    } catch (error) {
-      setAnalysisStatus("error");
-      setAnalysisError(error instanceof Error ? error.message : "AI 分析暂时不可用，请稍后重试。");
-    }
-  }, [aiConsent, answers, profile, result]);
-
-  useEffect(() => {
-    if (!aiConsent || analysisStatus !== "idle") return;
-    const timer = window.setTimeout(() => void generateAnalysis(), 0);
-    return () => window.clearTimeout(timer);
-  }, [aiConsent, analysisStatus, generateAnalysis]);
-
   return (
-    <>
-      <ClinicalReport
-        scaleSlug="scl-90"
-        category="症状自评量表"
-        title="症状自评量表（SCL-90）"
-        questionCount={answers.length}
-        resultLabel={conclusion}
-        resultSummary={`总分 ${result.totalScore}，总体症状指数（总均分）为 ${result.overallMean.toFixed(2)}，阳性项目 ${result.positiveCount} 项，阴性项目 ${result.negativeCount} 项。`}
-        metrics={[
-          { label: "总分", value: result.totalScore, hint: "参考范围：0 ～ 450" },
-          { label: "阳性项目数", value: result.positiveCount, hint: "参考范围：0 ～ 90" },
-          { label: "阴性项目数", value: result.negativeCount, hint: "参考范围：0 ～ 90" },
-        ]}
-        profileItems={profile.age ? [{ label: "年龄", value: profile.age }] : []}
-        completedAt={completedAt}
-        elapsedSeconds={elapsedSeconds}
-        reportRef={reportRef}
-        onDownload={onDownload}
-      >
-        <div className="report-two-column">
-          <ReportSection title="十因子症状分图（SCL-90）" eyebrow="因子均分">
-            <ScoreChart result={result} />
+    <ClinicalReport
+      scaleSlug="scl-90"
+      category="症状自评量表"
+      title="症状自评量表（SCL-90）"
+      questionCount={answers.length}
+      resultLabel={conclusion}
+      resultSummary={`总分 ${result.totalScore}，总体症状指数（总均分）为 ${result.overallMean.toFixed(2)}，阳性项目 ${result.positiveCount} 项，阴性项目 ${result.negativeCount} 项。`}
+      metrics={[
+        { label: "总分", value: result.totalScore, hint: "参考范围：0 ～ 450" },
+        { label: "阳性项目数", value: result.positiveCount, hint: "参考范围：0 ～ 90" },
+        { label: "阴性项目数", value: result.negativeCount, hint: "参考范围：0 ～ 90" },
+      ]}
+      profileItems={profile.age ? [{ label: "年龄", value: profile.age }] : []}
+      completedAt={completedAt}
+      elapsedSeconds={elapsedSeconds}
+      reportRef={reportRef}
+      onDownload={onDownload}
+    >
+      <div className="report-two-column">
+        <ReportSection title="十因子症状分图（SCL-90）" eyebrow="因子均分">
+          <ScoreChart result={result} />
+        </ReportSection>
+        <ReportSection title="测评得分" eyebrow="数据明细">
+          <ScoreTable result={result} />
+        </ReportSection>
+      </div>
+
+      <div className="report-lower-grid">
+        <ReportSection title="报告分析" eyebrow="本地分析">
+          <ReportAnalysis analysis={analysis} result={result} />
+        </ReportSection>
+
+        <div className="report-lower-side">
+          <ReportSection title="综合建议" eyebrow="行动参考">
+            <div className="report-recommendations">
+              {analysis.recommendations.map((recommendation, index) => (
+                <p key={recommendation}><strong>{index + 1}</strong>{recommendation}</p>
+              ))}
+            </div>
           </ReportSection>
-          <ReportSection title="测评得分" eyebrow="数据明细">
-            <ScoreTable result={result} />
+
+          <ReportSection title="寄语" eyebrow="温馨提示">
+            <div className="report-closing-message">
+              <p>{analysis.closingMessage}</p>
+              <p className="report-risk-notice">{analysis.riskNotice}</p>
+            </div>
           </ReportSection>
         </div>
-
-        <div className="report-lower-grid">
-          <ReportSection title="报告分析" eyebrow="DeepSeek AI 分析">
-            <ReportAnalysis analysis={analysis} result={result} />
-          </ReportSection>
-
-          <div className="report-lower-side">
-            <ReportSection title="综合建议" eyebrow="行动参考">
-              <div className="report-recommendations">
-                {analysis.recommendations.map((recommendation, index) => (
-                  <p key={recommendation}><strong>{index + 1}</strong>{recommendation}</p>
-                ))}
-              </div>
-            </ReportSection>
-
-            <ReportSection title="寄语" eyebrow="温馨提示">
-              <div className="report-closing-message">
-                <p>{analysis.closingMessage}</p>
-                <p className="report-risk-notice">{analysis.riskNotice}</p>
-              </div>
-            </ReportSection>
-          </div>
-        </div>
-      </ClinicalReport>
-
-      <section className="report-ai-panel" aria-label="AI 分析设置">
-        <div>
-          <p className="report-ai-title">DeepSeek AI 分析</p>
-          <p className="report-ai-description">报告打开后会自动尝试生成 AI 解读。将发送 90 道题的作答选项、统计结果和可选匿名信息，数据不会在本站保存。</p>
-        </div>
-        <label className="report-consent">
-          <input type="checkbox" checked={aiConsent} onChange={(event) => setAiConsent(event.target.checked)} />
-          <span>同意发送测评数据进行 AI 分析</span>
-        </label>
-        <button type="button" className="primary-button" onClick={generateAnalysis} disabled={analysisStatus === "loading"}>
-          {analysisStatus === "loading" ? "分析生成中…" : analysisStatus === "success" ? "重新生成分析" : analysisStatus === "error" ? "重试 AI 分析" : "生成 AI 分析"}
-        </button>
-        {analysisStatus === "success" ? <p className="report-ai-success">AI 分析已更新到报告中。</p> : null}
-        {analysisError ? <p className="report-ai-error">{analysisError} 当前报告仍保留本地基础分析，可稍后重试。</p> : null}
-      </section>
-    </>
+      </div>
+    </ClinicalReport>
   );
 }

@@ -12,6 +12,7 @@ type ScoredDimension = {
   key: string;
   name: string;
   description: string;
+  direction?: ScaleDimension["direction"];
   details?: ScaleDimension["details"];
   score: number;
   band: DimensionBand;
@@ -34,6 +35,7 @@ export type ProfileScaleResult = {
   normalized: number;
   dimensions: ScoredDimension[];
   overview: string;
+  notices?: string[];
   temperament?: {
     label: string;
     summary: string;
@@ -146,9 +148,17 @@ function scoreSumScale(scale: ScaleDefinition, answers: ScaleAnswer[]): SumScale
   const totalScore = scale.standardize === "times-1.25-floor" ? Math.floor(rawScore * 1.25) : rawScore;
   const maxScore = scale.standardize === "times-1.25-floor" ? Math.floor(rawMaxScore * 1.25) : rawMaxScore;
 
-  const notices = scale.slug === "epds" && scores[9] >= 1
-    ? ["第 10 题自伤意念得分 ≥1：无论总分多少，都应尽快联系专业医务人员进一步评估。"]
-    : undefined;
+  const notices = [
+    ...(scale.slug === "epds" && scores[9] >= 1
+      ? ["第 10 题自伤意念得分 ≥1：无论总分多少，都应尽快联系专业医务人员进一步评估。"]
+      : []),
+    ...(scale.slug === "phq-9" && scores[8] >= 1
+      ? ["第 9 题出现自伤或死亡相关想法：无论总分多少，都应立即联系专业医疗或心理服务，并在存在紧迫危险时寻求急救。"]
+      : []),
+    ...(scale.slug === "bdi-ii" && scores[8] >= 1
+      ? ["第 9 题出现自杀相关想法：无论总分多少，都应立即联系专业医疗或心理服务，并在存在紧迫危险时寻求急救。"]
+      : []),
+  ];
 
   return {
     kind: "sum",
@@ -157,7 +167,7 @@ function scoreSumScale(scale: ScaleDefinition, answers: ScaleAnswer[]): SumScale
     maxScore,
     normalized: maxScore > 0 ? totalScore / maxScore : 0,
     band: findBand(scale.bands, totalScore),
-    ...(notices ? { notices } : {}),
+    ...(notices.length > 0 ? { notices } : {}),
   };
 }
 
@@ -178,6 +188,7 @@ function scoreDimension(scale: ScaleDefinition, dimension: ScaleDimension, answe
     key: dimension.key,
     name: dimension.name,
     description: dimension.description,
+    direction: dimension.direction,
     details: dimension.details,
     score,
     band: findBand(dimension.bands, score),
@@ -186,9 +197,9 @@ function scoreDimension(scale: ScaleDefinition, dimension: ScaleDimension, answe
 
 function buildProfileOverview(dimensions: ScoredDimension[]) {
   const sorted = [...dimensions].sort((left, right) => right.score - left.score);
-  const strongest = sorted.slice(0, 2).map((item) => item.name).join("、");
-  const support = sorted[sorted.length - 1];
-  return `当前画像中更突出的维度是${strongest}；相对需要进一步结合访谈理解的是${support.name}。`;
+  const higher = sorted.slice(0, 2).map((item) => `${item.name}（${item.score} 分）`).join("、");
+  const lower = sorted.slice(-1)[0];
+  return `本次得分相对较高的维度是${higher}；相对较低的是${lower.name}（${lower.score} 分）。高低的具体含义取决于量表方向，请结合下方维度说明理解。`;
 }
 
 function buildTemperamentResult(scale: ScaleDefinition, dimensions: ScoredDimension[]) {
@@ -242,6 +253,13 @@ function scoreProfileScale(scale: ScaleDefinition, answers: ScaleAnswer[]): Prof
   const minScore = scale.questions.length * Math.min(...values);
   const normalized = maxScore === minScore ? 0 : (totalScore - minScore) / (maxScore - minScore);
   const temperament = buildTemperamentResult(scale, dimensions);
+  const notices = scale.slug === "dass-21" && getAdjustedScore(
+    scale,
+    scale.questions[20],
+    numericAnswer(answers[20], "Answer 21"),
+  ) >= 1
+    ? ["DASS-21 第 21 题出现生命无意义感：无论其他维度得分如何，都建议尽快联系专业心理或医疗服务，评估当前安全和支持需要。"]
+    : undefined;
 
   return {
     kind: "profile",
@@ -250,6 +268,7 @@ function scoreProfileScale(scale: ScaleDefinition, answers: ScaleAnswer[]): Prof
     normalized,
     dimensions,
     overview: temperament?.summary ?? buildProfileOverview(dimensions),
+    ...(notices ? { notices } : {}),
     temperament,
   };
 }
@@ -425,11 +444,52 @@ function scoreScl90(scale: ScaleDefinition, answers: ScaleAnswer[]): Scl90ScaleR
   };
 }
 
+function scoreMosSocial(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleResult {
+  const values = answers.map((answer, index) => numericAnswer(answer, `Answer ${index + 1}`));
+  const closeNetwork = values[0];
+  const functional = values.slice(1);
+  const toPercent = (indexes: number[]) => {
+    const mean = indexes.reduce((sum, index) => sum + functional[index], 0) / indexes.length;
+    return Number((((mean - 1) / 4) * 100).toFixed(1));
+  };
+  const sections = [
+    {
+      key: "network",
+      label: "亲密朋友与亲属网络",
+      score: closeNetwork,
+      maxScore: 6,
+      summary: `选择的类别为“${scale.questions[0].options?.find((option) => option.value === closeNetwork)?.label ?? "未识别"}”。该项目只用于描述可联系的亲密关系数量，不计入总体社会支持分。`,
+    },
+    { key: "emotional-info", label: "情感与信息支持", score: toPercent([0, 1, 2, 6, 7, 11, 12, 16]), maxScore: 100, summary: "反映倾听、理解、建议和信息支持的可获得程度，分数越高表示感知到的支持越充足。" },
+    { key: "tangible", label: "实际帮助支持", score: toPercent([3, 8, 9, 14]), maxScore: 100, summary: "反映照料、交通、做饭和家务等实际帮助的可获得程度。" },
+    { key: "affectionate", label: "情感亲密支持", score: toPercent([4, 10, 13]), maxScore: 100, summary: "反映爱、关心、拥抱和被需要感等亲密支持的可获得程度。" },
+    { key: "positive-interaction", label: "积极社交互动", score: toPercent([5, 17, 18]), maxScore: 100, summary: "反映一起放松、娱乐和转移注意力的积极互动机会。" },
+    { key: "overall", label: "总体社会支持", score: toPercent(Array.from({ length: 19 }, (_, index) => index)), maxScore: 100, summary: "总体功能性社会支持的 0～100 分换算结果；分数越高表示感知到的支持越充足。" },
+  ];
+  const overall = sections.find((section) => section.key === "overall")?.score ?? 0;
+  const networkLabel = scale.questions[0].options?.find((option) => option.value === closeNetwork)?.label ?? "未识别";
+
+  return {
+    kind: "custom",
+    totalScore: overall,
+    maxScore: 100,
+    normalized: overall / 100,
+    label: "社会支持感知画像",
+    summary: `总体社会支持换算分为 ${overall} 分（0～100），亲密朋友与亲属数量类别为“${networkLabel}”。分数用于描述支持感知，不设统一临床诊断切点。`,
+    metrics: [
+      { label: "总体支持", value: `${overall} / 100` },
+      { label: "亲密关系网络", value: networkLabel },
+    ],
+    sections,
+  };
+}
+
 function scoreCustomScale(scale: ScaleDefinition, answers: ScaleAnswer[]): CustomScaleResult {
   switch (scale.customScoringKey) {
     case "aas": return scoreAas(scale, answers);
     case "psqi": return scorePsqi(scale, answers);
     case "scl90": return scoreScl90(scale, answers);
+    case "mos-social": return scoreMosSocial(scale, answers);
     default: throw new Error(`Scale "${scale.slug}" is missing custom scoring configuration.`);
   }
 }

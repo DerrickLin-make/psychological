@@ -22,12 +22,15 @@ export type DimensionBand = {
   max: number;
   label: string;
   summary: string;
+  recommendation?: string;
+  tone?: "positive" | "caution" | "neutral";
 };
 
 export type ScaleDimension = {
   key: string;
   name: string;
   description: string;
+  direction?: "positive" | "concern" | "descriptive";
   scoreMode?: "average" | "sum";
   details?: {
     neuralTraits?: string;
@@ -87,6 +90,8 @@ export type ScaleDefinition = {
   intro: string;
   estimatedMinutes: number;
   scoringNote: string;
+  translationNote?: string;
+  sourceNote?: string;
   kind: "sum" | "profile" | "mbti" | "custom";
   options: ScaleOption[];
   questions: ScaleQuestion[];
@@ -98,6 +103,6 @@ export type ScaleDefinition = {
   mbtiTypes?: MbtiTypeProfile[];
   /** Temperament-specific: evaluation thresholds */
   temperamentRules?: TemperamentEvalRule;
-  customScoringKey?: "aas" | "psqi" | "scl90";
+  customScoringKey?: "aas" | "psqi" | "scl90" | "mos-social";
   standardize?: "times-1.25-floor";
 };

@@ -321,7 +321,6 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
           <ScaleReport
             scale={scale}
             result={result}
-            answers={answers as ScaleAnswer[]}
             completedAt={completedAt}
             elapsedSeconds={elapsedSeconds}
             reportRef={reportRef}

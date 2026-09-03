@@ -3,7 +3,7 @@ import test from "node:test";
 import { scales } from "../src/data/scales";
 import { scoreScale } from "../src/lib/scoring";
 
-test("Word scale registry contains the expected 12 instruments", () => {
+test("scale registry contains the expected instruments", () => {
   assert.deepEqual(scales.map((scale) => scale.slug), [
     "aas-r",
     "pcl-5",
@@ -17,6 +17,16 @@ test("Word scale registry contains the expected 12 instruments", () => {
     "epds",
     "scl-90",
     "bdi-ii",
+    "dass-21",
+    "phq-9",
+    "gad-7",
+    "gse",
+    "cbi",
+    "bat-23",
+    "ipip-big5-50",
+    "ffmq-39",
+    "erq",
+    "mos-social",
   ]);
 });
 
@@ -39,6 +49,16 @@ test("all Word scale question counts match the source scope", () => {
     epds: 10,
     "scl-90": 90,
     "bdi-ii": 21,
+    "dass-21": 21,
+    "phq-9": 9,
+    "gad-7": 7,
+    gse: 10,
+    cbi: 19,
+    "bat-23": 33,
+    "ipip-big5-50": 50,
+    "ffmq-39": 39,
+    erq: 10,
+    "mos-social": 20,
   });
 });
 
@@ -118,4 +138,77 @@ test("EPDS, SCL-90, BDI-II, MBTI and profile scales score without invented answe
   assert.equal(scoreScale(neo, Array.from({ length: 60 }, () => 3)).kind, "profile");
   assert.equal(scoreScale(marital, Array.from({ length: 5 }, () => 5)).kind, "profile");
   assert.equal(scoreScale(fad, Array.from({ length: 30 }, () => 2)).kind, "profile");
+});
+
+test("new evidence-based scales keep their published scoring shapes", () => {
+  const dass = scales.find((scale) => scale.slug === "dass-21");
+  const phq = scales.find((scale) => scale.slug === "phq-9");
+  const gad = scales.find((scale) => scale.slug === "gad-7");
+  const gse = scales.find((scale) => scale.slug === "gse");
+  const cbi = scales.find((scale) => scale.slug === "cbi");
+  const bat = scales.find((scale) => scale.slug === "bat-23");
+  const ipip = scales.find((scale) => scale.slug === "ipip-big5-50");
+  const ffmq = scales.find((scale) => scale.slug === "ffmq-39");
+  const erq = scales.find((scale) => scale.slug === "erq");
+  const mos = scales.find((scale) => scale.slug === "mos-social");
+  assert.ok(dass);
+  assert.ok(phq);
+  assert.ok(gad);
+  assert.ok(gse);
+  assert.ok(cbi);
+  assert.ok(bat);
+  assert.ok(ipip);
+  assert.ok(ffmq);
+  assert.ok(erq);
+  assert.ok(mos);
+
+  const dassResult = scoreScale(dass, Array.from({ length: 21 }, () => 1));
+  assert.equal(dassResult.kind, "profile");
+  assert.deepEqual(dassResult.dimensions.map((dimension) => dimension.score), [7, 7, 7]);
+  assert.deepEqual(dassResult.dimensions.map((dimension) => dimension.band.label), ["中度", "中度", "正常范围"]);
+  const dassRiskResult = scoreScale(dass, [...Array.from({ length: 20 }, () => 0), 1]);
+  assert.equal(dassRiskResult.kind, "profile");
+  assert.equal(dassRiskResult.notices?.length, 1);
+
+  const phqResult = scoreScale(phq, Array.from({ length: 9 }, () => 0));
+  assert.equal(phqResult.kind, "sum");
+  assert.equal(phqResult.totalScore, 0);
+  const phqRiskResult = scoreScale(phq, [0, 0, 0, 0, 0, 0, 0, 0, 1]);
+  assert.equal(phqRiskResult.kind, "sum");
+  assert.equal(phqRiskResult.notices?.length, 1);
+  assert.equal(scoreScale(gad, Array.from({ length: 7 }, () => 0)).kind, "sum");
+
+  const gseResult = scoreScale(gse, Array.from({ length: 10 }, () => 1));
+  assert.equal(gseResult.kind, "profile");
+  assert.equal(gseResult.dimensions[0].score, 10);
+
+  const cbiResult = scoreScale(cbi, [
+    ...Array.from({ length: 12 }, () => 100),
+    0,
+    ...Array.from({ length: 6 }, () => 100),
+  ]);
+  assert.equal(cbiResult.kind, "profile");
+  assert.deepEqual(cbiResult.dimensions.map((dimension) => dimension.score), [100, 85.7, 100]);
+
+  const batResult = scoreScale(bat, Array.from({ length: 33 }, () => 1));
+  assert.equal(batResult.kind, "profile");
+  assert.equal(batResult.dimensions.length, 6);
+  assert.equal(batResult.dimensions[0].score, 1);
+
+  const ipipResult = scoreScale(ipip, Array.from({ length: 50 }, () => 3));
+  assert.equal(ipipResult.kind, "profile");
+  assert.deepEqual(ipipResult.dimensions.map((dimension) => dimension.score), [30, 30, 30, 30, 30]);
+
+  const ffmqResult = scoreScale(ffmq, Array.from({ length: 39 }, () => 3));
+  assert.equal(ffmqResult.kind, "profile");
+  assert.deepEqual(ffmqResult.dimensions.map((dimension) => dimension.score), [3, 3, 3, 3, 3]);
+
+  const erqResult = scoreScale(erq, Array.from({ length: 10 }, () => 4));
+  assert.equal(erqResult.kind, "profile");
+  assert.deepEqual(erqResult.dimensions.map((dimension) => dimension.score), [4, 4]);
+
+  const mosResult = scoreScale(mos, [1, ...Array.from({ length: 19 }, () => 3)]);
+  assert.equal(mosResult.kind, "custom");
+  assert.equal(mosResult.totalScore, 50);
+  assert.equal(mosResult.sections.find((section) => section.key === "overall")?.score, 50);
 });

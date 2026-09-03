@@ -47,49 +47,8 @@ export type Scl90Analysis = {
   closingMessage: string;
 };
 
-export type Scl90AnalysisRequest = {
-  scale: "scl90";
-  answers: number[];
-  result: Scl90ScaleResult;
-  profile?: Scl90Profile;
-};
-
 export function isScl90Result(result: ScaleResult): result is Scl90ScaleResult {
   return result.kind === "custom" && "instrument" in result && result.instrument === "scl90";
-}
-
-function text(value: unknown) {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
-}
-
-export function parseScl90Analysis(value: unknown): Scl90Analysis | null {
-  if (!value || typeof value !== "object") return null;
-  const candidate = value as Record<string, unknown>;
-  const overallSummary = text(candidate.overallSummary);
-  const riskNotice = text(candidate.riskNotice);
-  const closingMessage = text(candidate.closingMessage);
-  const recommendations = Array.isArray(candidate.recommendations)
-    ? candidate.recommendations.map(text).filter((item): item is string => Boolean(item)).slice(0, 6)
-    : [];
-  const factorAnalyses = Array.isArray(candidate.factorAnalyses)
-    ? candidate.factorAnalyses.flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const factor = item as Record<string, unknown>;
-      const key = text(factor.key);
-      const title = text(factor.title);
-      const level = text(factor.level);
-      const explanation = text(factor.explanation);
-      return key && title && level && explanation ? [{ key, title, level, explanation }] : [];
-    }).slice(0, 10)
-    : [];
-
-  const factorKeys = new Set(factorAnalyses.map((factor) => factor.key));
-  const hasAllFactors = SCL90_FACTORS.every((factor) => factorKeys.has(factor.key));
-  if (!overallSummary || !riskNotice || !closingMessage || !hasAllFactors || recommendations.length === 0) {
-    return null;
-  }
-
-  return { overallSummary, factorAnalyses, recommendations, riskNotice, closingMessage };
 }
 
 export function buildFallbackScl90Analysis(result: Scl90ScaleResult): Scl90Analysis {
