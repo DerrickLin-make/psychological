@@ -59,9 +59,14 @@ export const severity5: ScaleOption[] = [
   { label: "5", detail: "严重", value: 5 },
 ];
 
+export function rangeBandKey(min: number, max: number) {
+  return `range-${min}-${max}`;
+}
+
 export const sumBands = (
   bands: Array<[number, number, string, string, string, string]>,
 ): ScaleBand[] => bands.map(([min, max, label, emphasis, summary, recommendation]) => ({
+  bandKey: rangeBandKey(min, max),
   min,
   max,
   label,

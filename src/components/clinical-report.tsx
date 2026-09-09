@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Clock3,
   Download,
+  Home,
   LifeBuoy,
   LayoutDashboard,
   Printer,
@@ -98,6 +99,10 @@ function Sidebar({ scaleSlug }: { scaleSlug: string }) {
         <Link className="report-nav-item" href={`/scales/${scaleSlug}`}>
           <ClipboardList size={17} strokeWidth={1.8} />
           <span>测评详情</span>
+        </Link>
+        <Link className="report-nav-item" href="/">
+          <Home size={17} strokeWidth={1.8} />
+          <span>返回首页</span>
         </Link>
       </nav>
 

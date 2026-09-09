@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BackButton } from "@/components/back-button";
+import { BackButton, HomeButton } from "@/components/back-button";
 import { scales } from "@/data/scales";
 
 export default function ScalesPage() {
@@ -11,7 +11,10 @@ export default function ScalesPage() {
             <strong>MindScope</strong>
             <span>心理健康评估系统</span>
           </Link>
-          <BackButton fallbackHref="/" />
+          <div className="topbar-actions">
+            <HomeButton />
+            <BackButton fallbackHref="/" />
+          </div>
         </header>
 
         <section className="listing-header">

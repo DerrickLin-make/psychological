@@ -195,13 +195,6 @@ function scoreDimension(scale: ScaleDefinition, dimension: ScaleDimension, answe
   };
 }
 
-function buildProfileOverview(dimensions: ScoredDimension[]) {
-  const sorted = [...dimensions].sort((left, right) => right.score - left.score);
-  const higher = sorted.slice(0, 2).map((item) => `${item.name}（${item.score} 分）`).join("、");
-  const lower = sorted.slice(-1)[0];
-  return `本次得分相对较高的维度是${higher}；相对较低的是${lower.name}（${lower.score} 分）。高低的具体含义取决于量表方向，请结合下方维度说明理解。`;
-}
-
 function buildTemperamentResult(scale: ScaleDefinition, dimensions: ScoredDimension[]) {
   const rules = scale.temperamentRules;
   if (!rules) return undefined;
@@ -267,7 +260,7 @@ function scoreProfileScale(scale: ScaleDefinition, answers: ScaleAnswer[]): Prof
     maxScore,
     normalized,
     dimensions,
-    overview: temperament?.summary ?? buildProfileOverview(dimensions),
+    overview: temperament?.summary ?? "本次各维度已分别完成计分，请结合报告中的固定因子解释阅读。",
     ...(notices ? { notices } : {}),
     temperament,
   };

@@ -12,7 +12,7 @@ export const maritalAdjustmentScale: ScaleDefinition = {
   summary: "本测试包含 5 道婚姻调适题目，涵盖婚姻满意度、意见一致性、冲突处理、共同活动和信任等方面。",
   intro: "请选择最符合你们当前婚姻关系的选项。",
   estimatedMinutes: 4,
-  scoringNote: "每题按 1～5 分计分，本测试共展示并计分 5 道题目。",
+  scoringNote: "每题按 1～5 分计分，本测试共展示并计分 5 道题目；结果按连续关系体验呈现，不设统一临床阈值。",
   kind: "profile",
   options: maritalOptions(["","","","",""]),
   questions: [
@@ -23,30 +23,10 @@ export const maritalAdjustmentScale: ScaleDefinition = {
   q("marital-5", "你是否放心让配偶单独与异性朋友外出聚会?", maritalOptions(["完全放心", "比较放心", "有点担心，但不会干涉", "很担心，会询问具体情况", "非常担心，坚决不允许"]), false, { dimensionKey: "dimension5" }),
   ],
   dimensions: [
-    { key: "dimension1", name: "婚姻满意度维度", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度得分较低，建议进一步讨论。" },
-      { min: 2.6, max: 3.5, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.6, max: 5, label: "相对较好", summary: "该维度得分相对较高。" },
-    ] },
-    { key: "dimension2", name: "夫妻意见一致性维度", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度得分较低，建议进一步讨论。" },
-      { min: 2.6, max: 3.5, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.6, max: 5, label: "相对较好", summary: "该维度得分相对较高。" },
-    ] },
-    { key: "dimension3", name: "冲突处理方式维度", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度得分较低，建议进一步讨论。" },
-      { min: 2.6, max: 3.5, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.6, max: 5, label: "相对较好", summary: "该维度得分相对较高。" },
-    ] },
-    { key: "dimension4", name: "共同活动与兴趣维度", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度得分较低，建议进一步讨论。" },
-      { min: 2.6, max: 3.5, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.6, max: 5, label: "相对较好", summary: "该维度得分相对较高。" },
-    ] },
-    { key: "dimension5", name: "信任与忠诚度维度", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度得分较低，建议进一步讨论。" },
-      { min: 2.6, max: 3.5, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.6, max: 5, label: "相对较好", summary: "该维度得分相对较高。" },
-    ] },
+    { key: "dimension1", name: "婚姻满意度维度", description: "", bands: [{ min: 1, max: 5, label: "连续性得分", summary: "分数按连续关系体验解释，不设统一临床阈值。" }] },
+    { key: "dimension2", name: "夫妻意见一致性维度", description: "", bands: [{ min: 1, max: 5, label: "连续性得分", summary: "分数按连续关系体验解释，不设统一临床阈值。" }] },
+    { key: "dimension3", name: "冲突处理方式维度", description: "", bands: [{ min: 1, max: 5, label: "连续性得分", summary: "分数按连续关系体验解释，不设统一临床阈值。" }] },
+    { key: "dimension4", name: "共同活动与兴趣维度", description: "", bands: [{ min: 1, max: 5, label: "连续性得分", summary: "分数按连续关系体验解释，不设统一临床阈值。" }] },
+    { key: "dimension5", name: "信任与忠诚度维度", description: "", bands: [{ min: 1, max: 5, label: "连续性得分", summary: "分数按连续关系体验解释，不设统一临床阈值。" }] },
   ],
 };

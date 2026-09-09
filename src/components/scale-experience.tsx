@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { toPng } from "html-to-image";
-import { useRef, useState } from "react";
-import { BackButton } from "@/components/back-button";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { BackButton, HomeButton } from "@/components/back-button";
 import type { MbtiQuestion, ScaleAnswer, ScaleDefinition, ScaleQuestion } from "@/data/scales";
 import { ScaleReport } from "@/components/scale-report";
 import { Scl90Report } from "@/components/scl90-report";
+import { clearAssessmentDraft, loadAssessmentDraft, saveAssessmentDraft } from "@/lib/assessment-draft";
 import { scoreScale, type ScaleResult } from "@/lib/scoring";
 import { isScl90Result, type Scl90Profile } from "@/lib/scl90-report";
 
@@ -35,6 +36,10 @@ function isMbtiQuestion(question: ScaleQuestion | MbtiQuestion): question is Mbt
   return "optionA" in question;
 }
 
+function optionBadge(label: string, index: number) {
+  return label.length === 1 ? label : String.fromCharCode(65 + index);
+}
+
 export function ScaleExperience({ scale }: ScaleExperienceProps) {
   const totalQuestions = questionCount(scale);
   const [stage, setStage] = useState<"intro" | "question" | "result">("intro");
@@ -47,10 +52,67 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [completedAt, setCompletedAt] = useState<number | null>(null);
   const [profile, setProfile] = useState<Scl90Profile>({});
+  const [isDraftReady, setIsDraftReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const isScl90 = scale.slug === "scl-90";
 
+  useEffect(() => {
+    const draft = loadAssessmentDraft(window.sessionStorage, scale.slug, totalQuestions);
+    if (draft) {
+      setAnswers(draft.answers);
+      setCurrentIndex(draft.currentIndex);
+      setStartedAt(draft.startedAt);
+      setProfile(draft.profile);
+      setStage("question");
+      setDraftRestored(true);
+    }
+    setIsDraftReady(true);
+  }, [scale.slug, totalQuestions]);
+
+  useEffect(() => {
+    if (!isDraftReady || stage !== "question" || startedAt === null) return;
+
+    try {
+      saveAssessmentDraft(window.sessionStorage, {
+        scaleSlug: scale.slug,
+        questionCount: totalQuestions,
+        currentIndex,
+        answers,
+        startedAt,
+        profile,
+      });
+    } catch {
+      // Storage may be unavailable; the assessment can still continue in memory.
+    }
+  }, [answers, currentIndex, isDraftReady, profile, scale.slug, stage, startedAt, totalQuestions]);
+
+  useEffect(() => {
+    if (stage !== "question" || !answers.some((answer) => answer !== null && answer !== "")) return;
+
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [answers, stage]);
+
+  const clearDraft = () => {
+    try {
+      clearAssessmentDraft(window.sessionStorage, scale.slug);
+    } catch {
+      // Nothing else is required when browser storage is unavailable.
+    }
+  };
+
+  const confirmLeave = () => window.confirm("答题尚未完成。离开后可在当前标签页恢复，确定离开吗？");
+
+  const preventUnconfirmedLeave = (event: ReactMouseEvent<HTMLElement>) => {
+    if (!confirmLeave()) event.preventDefault();
+  };
+
   const reset = () => {
+    clearDraft();
     setStage("intro");
     setCurrentIndex(0);
     setAnswers(Array.from({ length: totalQuestions }, () => null));
@@ -60,11 +122,13 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     setStartedAt(null);
     setCompletedAt(null);
     setProfile({});
+    setDraftRestored(false);
   };
 
   const finish = (nextAnswers: AnswerState) => {
     try {
       setResult(scoreScale(scale, nextAnswers as ScaleAnswer[]));
+      clearDraft();
       setCompletedAt(Date.now());
       setError("");
       setStage("result");
@@ -142,7 +206,10 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
               <strong>MindScope</strong>
               <span>心理健康评估系统</span>
             </Link>
-            <BackButton fallbackHref="/scales" />
+            <div className="topbar-actions">
+              <HomeButton />
+              <BackButton fallbackHref="/scales" />
+            </div>
           </header>
 
           <section className="intro-layout">
@@ -216,12 +283,13 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
       <main className="experience-shell">
         <div className="experience-container question-container">
           <header className="experience-topbar">
-            <Link className="experience-brand" href="/scales">
+            <Link className="experience-brand" href="/scales" onClick={preventUnconfirmedLeave}>
               <strong>{scale.shortTitle}</strong>
               <span>在线测评</span>
             </Link>
             <div className="question-header-actions">
-              <BackButton fallbackHref={`/scales/${scale.slug}`} />
+              <HomeButton onBeforeNavigate={confirmLeave} />
+              <BackButton fallbackHref={`/scales/${scale.slug}`} onBeforeNavigate={confirmLeave} />
               <button type="button" className="secondary-button" onClick={goBack} disabled={currentIndex === 0}>上一题</button>
               <span>{currentIndex + 1} / {totalQuestions}</span>
             </div>
@@ -236,7 +304,11 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
               <p className="page-eyebrow">答题进度</p>
               <strong>{Math.round(((currentIndex + 1) / totalQuestions) * 100)}%</strong>
               <p>请根据最近一段时间的真实感受作答。</p>
-              <Link href="/scales" className="text-link">退出测评</Link>
+              <p role="status">
+                {draftRestored ? "已恢复当前标签页中的临时答题进度。" : null}
+                进度仅临时保存在当前标签页；刷新后可继续。共享设备使用后请关闭标签页清除。
+              </p>
+              <Link href="/scales" className="text-link" onClick={preventUnconfirmedLeave}>退出测评</Link>
             </aside>
 
             <section className="question-card">
@@ -257,9 +329,9 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
                 </div>
               ) : inputType === "choice" ? (
                 <div className="answer-grid">
-                  {options.map((option) => (
+                  {options.map((option, index) => (
                     <button key={`${question.id}-${option.value}`} type="button" className="answer-option" onClick={() => choose(option.value)}>
-                      <strong>{option.label}</strong>
+                      <strong>{optionBadge(option.label, index)}</strong>
                       <span>{option.detail}</span>
                     </button>
                   ))}
@@ -309,6 +381,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
       <div className="report-page-container">
         {scl90Result ? (
           <Scl90Report
+            scale={scale}
             result={scl90Result}
             answers={answers as ScaleAnswer[]}
             profile={profile}

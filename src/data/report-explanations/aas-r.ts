@@ -1,0 +1,128 @@
+import type { ScaleExplanation } from "./types";
+import { continuousFactor, descriptiveLimitations, profileExplanation, profileValue, source } from "./shared";
+
+const aasSource = source(
+  "original-study",
+  "Collins & Read：Adult attachment, working models, and relationship quality",
+  1990,
+  "https://doi.org/10.1037/0022-3514.58.4.644",
+);
+
+const attachmentProfiles = {
+  secure: profileValue({
+    key: "secure",
+    label: "安全型",
+    interpretation: "在亲近、依赖和被支持之间通常较容易保持相对平衡。",
+    manifestations: ["较能表达需要，也较能接受关系中的亲近。", "遇到关系波动时，通常可以通过沟通和现实信息调整判断。"],
+    impact: "有利于建立相互支持的关系；冲突时仍需关注边界和具体沟通方式。",
+    recommendations: ["继续练习清晰表达需要、回应对方需要，并保留彼此的独立空间。"],
+  }),
+  preoccupied: profileValue({
+    key: "preoccupied",
+    label: "先占型",
+    interpretation: "更重视关系中的亲近与确认，同时较容易担心被忽视或不被爱。",
+    manifestations: ["可能反复确认关系状态，敏锐注意对方态度变化。", "在不确定时容易优先放大拒绝或离开的可能性。"],
+    impact: "关系不确定时，情绪和注意力可能被占用；反复确认也可能增加双方压力。",
+    recommendations: ["区分事实与推测，先稳定自己，再用具体、非指责的方式沟通需要。"],
+  }),
+  dismissing: profileValue({
+    key: "dismissing",
+    label: "拒绝型",
+    interpretation: "更看重自主和距离，对依赖他人或过度亲近可能保持谨慎。",
+    manifestations: ["可能习惯独自处理压力，不容易主动寻求帮助。", "在关系要求增加时，可能先通过拉开距离来恢复安全感。"],
+    impact: "自主性可以支持独立决策，但长期回避求助可能减少可获得的支持和亲密感。",
+    recommendations: ["从低风险的小事开始练习求助和表达感受，同时明确自己需要的边界。"],
+  }),
+  fearful: profileValue({
+    key: "fearful",
+    label: "恐惧型",
+    interpretation: "既渴望亲近和支持，又担心受伤、失望或失去控制。",
+    manifestations: ["可能在靠近和退缩之间来回变化，对关系线索较敏感。", "信任建立较慢，压力高时更容易采用回避或防御。"],
+    impact: "关系中的不确定性可能带来较大情绪负荷，并影响沟通和稳定投入。",
+    recommendations: ["用渐进的方式建立信任，记录触发点；若关系困扰持续，建议寻求专业支持。"],
+  }),
+  boundary: profileValue({
+    key: "boundary",
+    label: "临界区间",
+    interpretation: "亲近依赖或焦虑均分落在 3 分附近，当前结果不足以清晰归入一种类型。",
+    manifestations: ["不同关系或不同情境下，亲近、依赖和担忧感可能有明显差异。"],
+    impact: "关系体验可能随情境、对象和近期事件变化，固定标签的解释价值有限。",
+    recommendations: ["结合具体关系事件观察自己的需要、边界和应对方式，不必急于给自己定型。"],
+  }),
+};
+
+export const aasRExplanation: ScaleExplanation = {
+  scaleSlug: "aas-r",
+  version: "2026.09-local-1",
+  translationStatus: "working-adaptation",
+  factors: {
+    closeness: continuousFactor({
+      key: "closeness",
+      name: "亲近",
+      construct: "描述对与他人建立亲密关系、接受情感靠近的舒适程度。",
+      scoreUnit: "average",
+      direction: "descriptive",
+      limitations: descriptiveLimitations,
+      sources: [aasSource],
+      interpretation: "分数越高，通常表示越能接受或寻求关系中的亲近；这不是亲密关系能力的价值排名。",
+      manifestations: ["可能表现在分享感受、接受陪伴和容许他人靠近的意愿上。"],
+      impact: "会影响表达需要、建立信任和处理关系距离的方式。",
+      recommendations: ["结合具体关系观察自己舒适的距离，并练习清晰表达边界和需要。"],
+    }),
+    dependence: continuousFactor({
+      key: "dependence",
+      name: "依赖",
+      construct: "描述在需要帮助或支持时信任、依靠他人的舒适程度。",
+      scoreUnit: "average",
+      direction: "descriptive",
+      limitations: descriptiveLimitations,
+      sources: [aasSource],
+      interpretation: "分数越高，通常表示更容易相信在需要时可以获得他人支持；分数低不等于没有独立能力。",
+      manifestations: ["可能表现在求助意愿、接受照顾以及对他人可靠性的判断上。"],
+      impact: "会影响压力中的求助路径，也会影响关系中的互相支持和责任分配。",
+      recommendations: ["保留自主性的同时，尝试把求助拆成具体、可回应的小请求。"],
+    }),
+    anxiety: continuousFactor({
+      key: "anxiety",
+      name: "依恋焦虑",
+      construct: "描述对不被爱、不被选择或关系不稳定的担忧程度。",
+      scoreUnit: "average",
+      direction: "concern",
+      limitations: descriptiveLimitations,
+      sources: [aasSource],
+      interpretation: "分数越高，通常表示关系不确定性引发的担忧更多；它描述关系体验，不直接判断心理疾病。",
+      manifestations: ["可能反复确认关系、敏锐注意对方变化，或在距离增加时感到不安。"],
+      impact: "持续担忧可能占用注意力，影响情绪稳定、沟通和睡眠。",
+      recommendations: ["先区分已发生的事实与对未来的推测，再选择合适时间进行具体沟通。"],
+    }),
+    composite: continuousFactor({
+      key: "composite",
+      name: "亲近依赖复合",
+      construct: "将亲近与依赖两个维度合并，描述对亲密关系和相互支持的总体舒适程度。",
+      scoreUnit: "average",
+      direction: "descriptive",
+      limitations: descriptiveLimitations,
+      sources: [aasSource],
+      interpretation: "分数越高，通常表示更容易接受亲近并相信关系支持；类型判定仍需结合依恋焦虑维度。",
+      manifestations: ["可能表现在建立亲密、接受帮助和维持关系联系的倾向上。"],
+      impact: "会影响关系投入、求助方式和冲突后的修复路径。",
+      recommendations: ["同时观察自己如何靠近、如何求助以及如何处理不确定感，避免只看单一分数。"],
+    }),
+  },
+  profiles: {
+    "attachment-type": profileExplanation({
+      key: "attachment-type",
+      name: "依恋类型",
+      construct: "根据亲近依赖复合均分与依恋焦虑均分的相对位置形成的描述性类型结果。",
+      values: attachmentProfiles,
+      limitations: ["类型由本项目的 3 分规则生成，不能替代完整访谈或关系史评估。", ...descriptiveLimitations],
+      sources: [aasSource],
+    }),
+  },
+  overall: {
+    summary: "AAS-R 从亲近、依赖和依恋焦虑三个方面描述亲密关系中的常见感受，并以此给出一个描述性依恋类型。",
+    recommendations: ["把类型当作理解关系体验的线索，结合具体关系和近期事件观察，而不要把它当作固定人格标签。"],
+  },
+  limitations: ["本项目使用中文工作译文和本地计分实现，正式研究应使用经过授权和验证的中文版本。", ...descriptiveLimitations],
+  sources: [aasSource],
+};

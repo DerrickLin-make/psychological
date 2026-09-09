@@ -2,16 +2,14 @@
 
 import type { RefObject } from "react";
 import { ClinicalReport, ReportSection } from "@/components/clinical-report";
-import {
-  buildFallbackScl90Analysis,
-  getScl90Conclusion,
-  type Scl90Analysis,
-  type Scl90Profile,
-} from "@/lib/scl90-report";
-import type { ScaleAnswer } from "@/data/scales";
+import { ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
+import { getScl90Conclusion, type Scl90Profile } from "@/lib/scl90-report";
+import type { ScaleAnswer, ScaleDefinition } from "@/data/scales";
 import type { Scl90ScaleResult } from "@/lib/scoring";
+import { buildFallbackScaleAnalysis, type ScaleAnalysis } from "@/lib/scale-analysis";
 
 type Scl90ReportProps = {
+  scale: ScaleDefinition;
   result: Scl90ScaleResult;
   answers: ScaleAnswer[];
   profile: Scl90Profile;
@@ -92,30 +90,8 @@ function ScoreTable({ result }: { result: Scl90ScaleResult }) {
   );
 }
 
-function ReportAnalysis({ analysis, result }: { analysis: Scl90Analysis; result: Scl90ScaleResult }) {
-  const sections = new Map(result.sections.map((section) => [section.key, section]));
-
-  return (
-    <>
-      <div className="table-scroll">
-        <table className="report-table report-analysis-table">
-          <thead><tr><th>指标</th><th>得分</th><th>说明</th></tr></thead>
-          <tbody>
-            {analysis.factorAnalyses.map((factor) => (
-              <tr key={factor.key}>
-                <th>{factor.title}</th>
-                <td>{sections.get(factor.key)?.rawScore ?? "—"}</td>
-                <td><strong>{factor.level}</strong>：{factor.explanation}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
 export function Scl90Report({
+  scale,
   result,
   answers,
   profile,
@@ -124,7 +100,7 @@ export function Scl90Report({
   reportRef,
   onDownload,
 }: Scl90ReportProps) {
-  const analysis: Scl90Analysis = buildFallbackScl90Analysis(result);
+  const analysis: ScaleAnalysis = buildFallbackScaleAnalysis(scale, result);
   const conclusion = getScl90Conclusion(result.overallMean);
 
   return (
@@ -157,7 +133,8 @@ export function Scl90Report({
 
       <div className="report-lower-grid">
         <ReportSection title="报告分析" eyebrow="本地分析">
-          <ReportAnalysis analysis={analysis} result={result} />
+          <p className="report-analysis-summary">{analysis.overallSummary}</p>
+          <ReportExplanationList factors={analysis.dimensionAnalyses} profiles={analysis.profiles} />
         </ReportSection>
 
         <div className="report-lower-side">
@@ -169,6 +146,15 @@ export function Scl90Report({
             </div>
           </ReportSection>
 
+          <ReportSection title="安全提示" eyebrow="使用边界">
+            <div className="report-closing-message">
+              <p>{analysis.riskNotice}</p>
+              {analysis.watchPoints.length > 0 ? (
+                <ul className="report-watch-list">{analysis.watchPoints.map((item) => <li key={item}>{item}</li>)}</ul>
+              ) : null}
+            </div>
+          </ReportSection>
+
           <ReportSection title="寄语" eyebrow="温馨提示">
             <div className="report-closing-message">
               <p>{analysis.closingMessage}</p>
@@ -177,6 +163,15 @@ export function Scl90Report({
           </ReportSection>
         </div>
       </div>
+
+      <ReportSection title="计分说明" eyebrow="使用提示">
+        <div className="report-note">
+          <p>{scale.scoringNote}</p>
+          {scale.translationNote ? <p>{scale.translationNote}</p> : null}
+          {scale.sourceNote ? <p>{scale.sourceNote}</p> : null}
+          <ReportSourceNotes analysis={analysis} />
+        </div>
+      </ReportSection>
     </ClinicalReport>
   );
 }

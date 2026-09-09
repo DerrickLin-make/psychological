@@ -1,18 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
-
-const sans = Noto_Sans_SC({
-  variable: "--font-sans-sc",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const serif = Noto_Serif_SC({
-  variable: "--font-serif-sc",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "MindScope | 纯前端心理测评系统",
@@ -32,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={`${sans.variable} ${serif.variable} antialiased`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>

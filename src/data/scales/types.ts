@@ -9,6 +9,7 @@ export type ScaleAnswer = number | string;
 export type ScaleInputType = "choice" | "time" | "duration" | "text";
 
 export type ScaleBand = {
+  bandKey?: string;
   min: number;
   max: number;
   label: string;
@@ -18,6 +19,7 @@ export type ScaleBand = {
 };
 
 export type DimensionBand = {
+  bandKey?: string;
   min: number;
   max: number;
   label: string;

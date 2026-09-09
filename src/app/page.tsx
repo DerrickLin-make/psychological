@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BackButton } from "@/components/back-button";
 
 export default function Home() {
   return (
@@ -11,20 +10,19 @@ export default function Home() {
             <span>心理健康评估系统</span>
           </Link>
           <div className="topbar-actions">
-            <BackButton />
             <Link href="/scales" className="secondary-button">查看量表</Link>
           </div>
         </header>
 
         <section className="home-hero">
           <div>
-            <p className="page-eyebrow">专业、清晰、可追踪</p>
+            <p className="page-eyebrow">专业、清晰、本地生成</p>
             <h1>
               面向心理咨询机构的
               <span>在线测评工作台</span>
             </h1>
             <p className="home-hero-copy">
-              为抑郁、焦虑、人格与睡眠等常见测评场景提供轻量化在线入口。来访者可以直接完成作答，咨询师可以快速查看结构化结果报告。
+              为抑郁、焦虑、人格与睡眠等常见测评场景提供轻量化在线入口。结果在本地生成，由客户主动保存或发送，不会上传答题记录。
             </p>
             <Link href="/scales" className="primary-button">开始选择量表</Link>
           </div>

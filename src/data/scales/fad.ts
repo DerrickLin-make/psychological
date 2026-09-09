@@ -10,7 +10,7 @@ export const fadScale: ScaleDefinition = {
   summary: "家庭功能评定量表修订版（中文版FAD）是在家庭过程模式理论（Family Process Model）指导下修订的家庭功能测评工具。该量表由李荣凤、徐夫真、纪林芹、张文新（山东师范大学心理学院）于2013年对英文版家庭功能评定量表（Family Assessment Device, FAD）进行初步修订而成。",
   intro: "请根据你对家庭日常互动的实际感受作答。",
   estimatedMinutes: 8,
-  scoringNote: "反向题按 5－原始分转换；各维度以平均分解释，平均分越低通常表示该维度越需要关注。",
+  scoringNote: "反向题按 5－原始分转换；各维度以平均分连续呈现。当前项目不设统一临床阈值，分数需结合具体家庭互动理解。",
   kind: "profile",
   options: likert4,
   questions: [
@@ -46,30 +46,10 @@ export const fadScale: ScaleDefinition = {
   q("fad-30", "虽然我们是好心好意，但我们相互之间管得太多", likert4, true, { dimensionKey: "e" }),
   ],
   dimensions: [
-    { key: "a", name: "情感交流", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度平均分较低，建议进一步关注。" },
-      { min: 2.6, max: 3.2, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.3, max: 4, label: "相对较好", summary: "该维度表现相对较好。" },
-    ] },
-    { key: "b", name: "积极沟通", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度平均分较低，建议进一步关注。" },
-      { min: 2.6, max: 3.2, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.3, max: 4, label: "相对较好", summary: "该维度表现相对较好。" },
-    ] },
-    { key: "c", name: "自我主义", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度平均分较低，建议进一步关注。" },
-      { min: 2.6, max: 3.2, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.3, max: 4, label: "相对较好", summary: "该维度表现相对较好。" },
-    ] },
-    { key: "d", name: "问题解决", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度平均分较低，建议进一步关注。" },
-      { min: 2.6, max: 3.2, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.3, max: 4, label: "相对较好", summary: "该维度表现相对较好。" },
-    ] },
-    { key: "e", name: "家庭规则", description: "", bands: [
-      { min: 1, max: 2.5, label: "需关注", summary: "该维度平均分较低，建议进一步关注。" },
-      { min: 2.6, max: 3.2, label: "中等", summary: "该维度处于中等范围。" },
-      { min: 3.3, max: 4, label: "相对较好", summary: "该维度表现相对较好。" },
-    ] },
+    { key: "a", name: "情感交流", description: "", bands: [{ min: 1, max: 4, label: "连续性得分", summary: "分数按连续家庭功能体验解释，不设统一临床阈值。" }] },
+    { key: "b", name: "积极沟通", description: "", bands: [{ min: 1, max: 4, label: "连续性得分", summary: "分数按连续家庭功能体验解释，不设统一临床阈值。" }] },
+    { key: "c", name: "自我主义", description: "", bands: [{ min: 1, max: 4, label: "连续性得分", summary: "分数按连续家庭功能体验解释，不设统一临床阈值。" }] },
+    { key: "d", name: "问题解决", description: "", bands: [{ min: 1, max: 4, label: "连续性得分", summary: "分数按连续家庭功能体验解释，不设统一临床阈值。" }] },
+    { key: "e", name: "家庭规则", description: "", bands: [{ min: 1, max: 4, label: "连续性得分", summary: "分数按连续家庭功能体验解释，不设统一临床阈值。" }] },
   ],
 };

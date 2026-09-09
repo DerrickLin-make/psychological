@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 import type { ScaleDefinition } from "@/data/scales";
 import { ClinicalReport, ReportSection, type ReportMetric } from "@/components/clinical-report";
+import { ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
 import type { ScaleResult } from "@/lib/scoring";
 import { buildFallbackScaleAnalysis, type ScaleAnalysis } from "@/lib/scale-analysis";
 
@@ -26,15 +27,6 @@ function resultLabel(scale: ScaleDefinition, result: ScaleResult) {
   return result.label;
 }
 
-function resultSummary(result: ScaleResult) {
-  if (result.kind === "sum") {
-    return `${result.band.emphasis} ${result.band.summary} 建议：${result.band.recommendation}`;
-  }
-  if (result.kind === "mbti") return result.typeProfile.summary;
-  if (result.kind === "profile") return result.overview;
-  return result.summary;
-}
-
 function reportMetrics(result: ScaleResult): ReportMetric[] {
   if (result.kind === "sum") {
     return [
@@ -53,10 +45,9 @@ function reportMetrics(result: ScaleResult): ReportMetric[] {
   }
 
   if (result.kind === "profile") {
-    const strongest = [...result.dimensions].sort((left, right) => right.score - left.score)[0];
     return [
       { label: "题目合计", value: formatScore(result.totalScore), hint: "仅用于记录，不作整体等级解释" },
-      { label: "最高维度", value: strongest?.name ?? "未形成", hint: strongest ? `得分：${formatScore(strongest.score)}` : "" },
+      { label: "结果模式", value: "多因子", hint: "各维度分别解释" },
       { label: "维度数量", value: result.dimensions.length, hint: "已完成分析" },
     ];
   }
@@ -165,34 +156,6 @@ function ScoreTable({ result }: { result: ScaleResult }) {
   );
 }
 
-function AnalysisTable({ analysis }: { analysis: ScaleAnalysis }) {
-  return (
-    <div className="table-scroll">
-      <table className="report-table report-analysis-table">
-        <thead><tr><th>分析维度</th><th>水平</th><th>详细说明</th></tr></thead>
-        <tbody>
-          {analysis.dimensionAnalyses.map((dimension) => (
-            <tr key={dimension.key}>
-              <th>{dimension.title}</th>
-              <td><strong>{dimension.level}</strong></td>
-              <td>{dimension.explanation}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function AnalysisList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="report-analysis-copy report-analysis-list">
-      <strong>{title}</strong>
-      {items.length > 0 ? <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul> : <p>暂无补充说明。</p>}
-    </div>
-  );
-}
-
 export function ScaleReport({ scale, result, completedAt, elapsedSeconds, reportRef, onDownload }: ScaleReportProps) {
   const analysis: ScaleAnalysis = buildFallbackScaleAnalysis(scale, result);
 
@@ -203,7 +166,7 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
       title={scale.title}
       questionCount={scale.mbtiQuestions?.length ?? scale.questions.length}
       resultLabel={resultLabel(scale, result)}
-      resultSummary={resultSummary(result)}
+      resultSummary={analysis.overallSummary}
       metrics={reportMetrics(result)}
       completedAt={completedAt}
       elapsedSeconds={elapsedSeconds}
@@ -222,7 +185,7 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
       <div className="report-lower-grid">
         <ReportSection title="报告分析" eyebrow="本地分析">
           <p className="report-analysis-summary">{analysis.overallSummary}</p>
-          <AnalysisTable analysis={analysis} />
+          <ReportExplanationList factors={analysis.dimensionAnalyses} profiles={analysis.profiles} />
         </ReportSection>
 
         <div className="report-lower-side">
@@ -234,9 +197,13 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
             </div>
           </ReportSection>
 
-          <ReportSection title="优势与关注" eyebrow="重点提示">
-            <AnalysisList title="可以利用的优势" items={analysis.strengths} />
-            <AnalysisList title="建议留意的变化" items={analysis.watchPoints} />
+          <ReportSection title="安全提示" eyebrow="使用边界">
+            <div className="report-closing-message">
+              <p>{analysis.riskNotice}</p>
+              {analysis.watchPoints.length > 0 ? (
+                <ul className="report-watch-list">{analysis.watchPoints.map((item) => <li key={item}>{item}</li>)}</ul>
+              ) : null}
+            </div>
           </ReportSection>
 
           <ReportSection title="寄语" eyebrow="温馨提示">
@@ -261,7 +228,7 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
           <p>{scale.scoringNote}</p>
           {scale.translationNote ? <p>{scale.translationNote}</p> : null}
           {scale.sourceNote ? <p>{scale.sourceNote}</p> : null}
-          <p>本结果仅用于自我筛查和自我觉察参考，不能替代专业心理咨询、临床诊断或医疗建议。</p>
+          <ReportSourceNotes analysis={analysis} />
         </div>
       </ReportSection>
     </ClinicalReport>

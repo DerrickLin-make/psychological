@@ -23,6 +23,8 @@
   --danger-surface: #fff2ef;
   --success: #2d765e;
   --radius-card: 12px;
+  --font-sans-sc: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", Arial, sans-serif;
+  --font-serif-sc: "Noto Serif SC", "Songti SC", SimSun, serif;
   --font-sans: var(--font-sans-sc);
   --font-serif: var(--font-serif-sc);
 }
@@ -101,6 +103,16 @@ button:disabled {
 .secondary-button:hover:not(:disabled) {
   border-color: #8fa6bc;
   background: var(--surface-muted);
+}
+
+.home-button {
+  gap: 0.45rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.home-button svg {
+  flex: 0 0 auto;
 }
 
 .text-link {
@@ -1203,6 +1215,120 @@ button:disabled {
   line-height: 1.55;
 }
 
+.report-explanation-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.report-explanation-card {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: #ffffff;
+  color: var(--body-text);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.report-explanation-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.report-explanation-kicker {
+  margin: 0 0 0.15rem;
+  color: var(--muted-text);
+  font-size: 0.62rem;
+}
+
+.report-explanation-card h3 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.report-explanation-score,
+.report-explanation-level {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.67rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.report-explanation-card > p,
+.report-explanation-copy p {
+  margin: 0.45rem 0 0;
+}
+
+.report-explanation-card strong {
+  margin-right: 0.25rem;
+  color: var(--navy);
+}
+
+.report-explanation-copy {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.report-explanation-copy ul,
+.report-source-notes ul,
+.report-watch-list {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.report-explanation-copy li,
+.report-source-notes li,
+.report-watch-list li {
+  padding-left: 0.05rem;
+}
+
+.report-explanation-risk {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #f0d89f;
+  border-radius: var(--radius-card);
+  background: var(--warning-surface);
+  color: var(--warning);
+}
+
+.report-source-notes {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.report-source-notes p,
+.report-source-notes ul {
+  margin: 0;
+}
+
+.report-source-notes a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.report-watch-list {
+  color: var(--warning);
+}
+
 .report-analysis-copy,
 .report-note,
 .report-closing-message {
@@ -1548,6 +1674,11 @@ button:disabled {
     border: 0;
     box-shadow: none;
   }
+
+  .report-explanation-card,
+  .report-section {
+    break-inside: avoid;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -1696,6 +1827,18 @@ button:disabled {
     padding-top: 3rem;
     padding-right: 0.75rem;
     padding-left: 0.75rem;
+  }
+
+  .report-explanation-card-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .report-explanation-score,
+  .report-explanation-level {
+    max-width: 12rem;
+    white-space: normal;
   }
 
   .intro-copy h1,

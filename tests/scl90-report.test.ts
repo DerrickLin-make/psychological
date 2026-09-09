@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { scl90Scale } from "../src/data/scales/scl90";
+import { resolveReportExplanations } from "../src/lib/report-explanations";
 import { scoreScale } from "../src/lib/scoring";
-import { buildFallbackScl90Analysis, isScl90Result } from "../src/lib/scl90-report";
+import { isScl90Result } from "../src/lib/scl90-report";
 
 function scoreAll(value: number) {
   return scoreScale(scl90Scale, Array.from({ length: 90 }, () => value));
@@ -65,13 +66,14 @@ test("SCL-90 matches the reference report's total-score metrics", () => {
   assert.equal(result.label, "轻度阳性");
 });
 
-test("SCL-90 local analysis is complete", () => {
+test("SCL-90 fixed explanation is complete", () => {
   const result = scoreAll(1);
   assert.equal(isScl90Result(result), true);
   if (!isScl90Result(result)) return;
 
-  const fallback = buildFallbackScl90Analysis(result);
-  assert.equal(fallback.factorAnalyses.length, 10);
-  assert.equal(fallback.recommendations.length, 3);
-  assert.match(fallback.riskNotice, /不构成医学诊断/);
+  const explanation = resolveReportExplanations(scl90Scale, result);
+  assert.equal(explanation.factors.length, 10);
+  assert.ok(explanation.factors.every((factor) => factor.construct.length > 10));
+  assert.ok(explanation.recommendations.length > 0);
+  assert.match(explanation.riskNotices[0], /不构成.*诊断/);
 });
