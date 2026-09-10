@@ -181,10 +181,20 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
 
   async function saveReport() {
     if (!reportRef.current) return;
+    const report = reportRef.current;
     setIsSaving(true);
     setSaveMessage("");
     try {
-      const dataUrl = await toPng(reportRef.current, { cacheBust: true, pixelRatio: 2 });
+      await document.fonts.ready;
+      report.classList.add("is-exporting");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const dataUrl = await toPng(report, {
+        cacheBust: true,
+        pixelRatio: 1,
+        width: 1920,
+        backgroundColor: "#f3f7fb",
+        style: { width: "1920px", maxWidth: "none" },
+      });
       const link = document.createElement("a");
       link.download = `${scale.shortTitle}-测评结果.png`;
       link.href = dataUrl;
@@ -193,6 +203,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
     } catch {
       setSaveMessage("保存图片失败，请尝试截图保存。");
     } finally {
+      report.classList.remove("is-exporting");
       setIsSaving(false);
     }
   }

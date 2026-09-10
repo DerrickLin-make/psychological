@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import {
+  BrainCircuit,
   ClipboardList,
   Clock3,
   Download,
+  FileChartColumn,
   Home,
   LifeBuoy,
   LayoutDashboard,
@@ -87,8 +89,11 @@ function Sidebar({ scaleSlug }: { scaleSlug: string }) {
   return (
     <aside className="report-sidebar">
       <div className="report-brand">
-        <span>MindScope</span>
-        <small>心理健康评估系统</small>
+        <div className="report-brand-mark"><BrainCircuit size={30} strokeWidth={1.6} /></div>
+        <div>
+          <span>MindScope</span>
+          <small>心理健康评估系统</small>
+        </div>
       </div>
 
       <nav className="report-nav" aria-label="报告导航">
@@ -179,18 +184,16 @@ export function ClinicalReport({
 
           <section className="report-overview" id="report-overview" aria-label="测评结果概览">
             <div className="report-status-card">
-              <span>测评结果</span>
-              <strong>{resultLabel}</strong>
+              <div className="report-kpi-icon"><FileChartColumn size={21} strokeWidth={1.8} /></div>
+              <div><span>测评结果</span><strong>{resultLabel}</strong></div>
             </div>
-            <div className="report-metrics">
-              {metrics.map((metric) => (
-                <div className="report-metric" key={metric.label}>
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                  {metric.hint ? <small>{metric.hint}</small> : null}
-                </div>
-              ))}
-            </div>
+            {metrics.map((metric, index) => (
+              <div className="report-metric" key={`${metric.label}-${index}`}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                {metric.hint ? <small>{metric.hint}</small> : null}
+              </div>
+            ))}
             <p className="report-overview-summary">{resultSummary}</p>
           </section>
 
