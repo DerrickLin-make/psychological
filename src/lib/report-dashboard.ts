@@ -37,10 +37,24 @@ export type DashboardPreference = {
   winner: string;
 };
 
+export type DashboardScoreBand = {
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  start: number;
+  end: number;
+  active: boolean;
+  emphasis: string;
+  summary: string;
+  recommendation: string;
+};
+
 export type ReportDashboardModel = {
   mode: ReportDashboardMode;
   metrics: DashboardMetric[];
   gauge?: DashboardGauge;
+  scoreBands: DashboardScoreBand[];
   dimensions: DashboardDimension[];
   preferences: DashboardPreference[];
   canUseRadar: boolean;
@@ -77,6 +91,22 @@ function gauge(label: string, value: number, min: number, max: number): Dashboar
     normalized: normalized(value, min, max),
     rangeLabel: `量表区间 ${formatScore(min)}–${formatScore(max)}`,
   };
+}
+
+function scoreBands(scale: ScaleDefinition, value: number, min: number, max: number): DashboardScoreBand[] {
+  const bands = scale.bands ?? [];
+  return bands.map((band, index) => ({
+    key: band.bandKey ?? `${band.min}-${band.max}`,
+    label: band.label,
+    min: band.min,
+    max: band.max,
+    start: normalized(band.min, min, max),
+    end: normalized(bands[index + 1]?.min ?? band.max, min, max),
+    active: value >= band.min && value <= band.max,
+    emphasis: band.emphasis,
+    summary: band.summary,
+    recommendation: band.recommendation,
+  }));
 }
 
 function profileDimensions(scale: ScaleDefinition, result: Extract<ScaleResult, { kind: "profile" }>) {
@@ -127,14 +157,16 @@ function sharesRange(items: DashboardDimension[]) {
 export function buildReportDashboard(scale: ScaleDefinition, result: ScaleResult): ReportDashboardModel {
   if (result.kind === "sum") {
     const min = Math.min(...(scale.bands ?? [result.band]).map((band) => band.min));
+    const scoreGauge = gauge("测评总分", result.totalScore, min, result.maxScore);
     return {
       mode: "sum",
       metrics: [
         { label: "总分", value: formatScore(result.totalScore), hint: `满分 ${formatScore(result.maxScore)}` },
         { label: "结果等级", value: result.band.label, hint: "依据量表参考区间" },
-        { label: "标准化位置", value: `${Math.round(result.normalized * 100)}%`, hint: "仅表示量尺位置" },
+        { label: "量尺位置", value: `${Math.round(scoreGauge.normalized * 100)}%`, hint: `最低计分 ${formatScore(min)}` },
       ],
-      gauge: gauge("测评总分", result.totalScore, min, result.maxScore),
+      gauge: scoreGauge,
+      scoreBands: scoreBands(scale, result.totalScore, min, result.maxScore),
       dimensions: [],
       preferences: [],
       canUseRadar: false,
@@ -153,6 +185,7 @@ export function buildReportDashboard(scale: ScaleDefinition, result: ScaleResult
         { label: "测评维度", value: dimensions.length, hint: "已完成分析" },
       ],
       gauge: gauge("作答计分合计", result.totalScore, totalMinimum, result.maxScore),
+      scoreBands: [],
       dimensions,
       preferences: [],
       canUseRadar: sharesRange(dimensions),
@@ -168,6 +201,7 @@ export function buildReportDashboard(scale: ScaleDefinition, result: ScaleResult
         { label: "偏好维度", value: result.pairs.filter((pair) => pair.leftScore !== pair.rightScore).length, hint: "存在明显偏好的维度" },
         { label: "有效作答", value: result.totalScore, hint: "题目数量" },
       ],
+      scoreBands: [],
       dimensions: [],
       preferences: result.pairs,
       canUseRadar: false,
@@ -184,6 +218,7 @@ export function buildReportDashboard(scale: ScaleDefinition, result: ScaleResult
       ...(result.metrics ?? []).slice(0, 2),
     ],
     gauge: result.maxScore > 0 ? gauge("测评总分", result.totalScore, 0, result.maxScore) : undefined,
+    scoreBands: [],
     dimensions,
     preferences: [],
     canUseRadar: !isScl90 && sharesRange(dimensions),

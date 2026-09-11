@@ -2,7 +2,7 @@
 
 import type { RefObject } from "react";
 import { ClinicalReport, ReportSection } from "@/components/clinical-report";
-import { ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
+import { ReportDeclaration, ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
 import { getScl90Conclusion, type Scl90Profile } from "@/lib/scl90-report";
 import type { ScaleAnswer, ScaleDefinition } from "@/data/scales";
 import type { Scl90ScaleResult } from "@/lib/scoring";
@@ -72,7 +72,7 @@ function ScoreTable({ result }: { result: Scl90ScaleResult }) {
       <table className="report-table">
         <thead><tr><th>指标</th><th>得分</th><th>均分</th><th>得分范围</th></tr></thead>
         <tbody>
-          <tr><th>总分</th><td>{result.totalScore}</td><td>{result.overallMean.toFixed(2)}</td><td>0 ～ 450</td></tr>
+          <tr><th>总分</th><td>{result.totalScore}</td><td>{result.overallMean.toFixed(2)}</td><td>90 ～ 450</td></tr>
           <tr><th>阳性项目数</th><td>{result.positiveCount}</td><td>—</td><td>0 ～ 90</td></tr>
           <tr><th>阴性项目数</th><td>{result.negativeCount}</td><td>—</td><td>0 ～ 90</td></tr>
           <tr><th>阳性症状均分</th><td>—</td><td>{result.positiveMean.toFixed(2)}</td><td>1 ～ 5</td></tr>
@@ -146,19 +146,17 @@ export function Scl90Report({
             </div>
           </ReportSection>
 
-          <ReportSection title="安全提示" eyebrow="使用边界">
-            <div className="report-closing-message">
-              <p>{analysis.riskNotice}</p>
-              {analysis.watchPoints.length > 0 ? (
+          {analysis.watchPoints.length > 0 ? (
+            <ReportSection title="重点关注" eyebrow="结果提醒">
+              <div className="report-closing-message">
                 <ul className="report-watch-list">{analysis.watchPoints.map((item) => <li key={item}>{item}</li>)}</ul>
-              ) : null}
-            </div>
-          </ReportSection>
+              </div>
+            </ReportSection>
+          ) : null}
 
           <ReportSection title="寄语" eyebrow="温馨提示">
             <div className="report-closing-message">
               <p>{analysis.closingMessage}</p>
-              <p className="report-risk-notice">{analysis.riskNotice}</p>
             </div>
           </ReportSection>
         </div>
@@ -171,6 +169,10 @@ export function Scl90Report({
           {scale.sourceNote ? <p>{scale.sourceNote}</p> : null}
           <ReportSourceNotes analysis={analysis} />
         </div>
+      </ReportSection>
+
+      <ReportSection title="声明" eyebrow="报告边界">
+        <ReportDeclaration>{`${analysis.riskNotice} 如当前困扰持续、加重、明显影响生活功能，或存在伤害自己、伤害他人的紧迫风险，请及时联系专业机构或当地紧急援助。`}</ReportDeclaration>
       </ReportSection>
     </ClinicalReport>
   );

@@ -201,7 +201,6 @@ export function ClinicalReport({
 
           <footer className="report-footer">
             <span><ShieldCheck size={14} /> MindScope 心理健康评估系统</span>
-            <span>本报告仅供参考，不作为诊断依据。</span>
             <span>共 {questionCount} 道题</span>
           </footer>
         </main>

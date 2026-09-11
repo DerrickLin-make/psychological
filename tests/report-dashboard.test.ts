@@ -65,6 +65,29 @@ test("dashboard adapter preserves the distinct report modes", () => {
   assert.equal(mbtiModel.preferences.length, 4);
 });
 
+test("every registered scale produces a populated primary data portrait", () => {
+  for (const scale of scales) {
+    const result = scoreScale(scale, sampleAnswers(scale));
+    const model = buildReportDashboard(scale, result);
+
+    if (model.mode === "sum") {
+      assert.ok(
+        "scoreBands" in model && Array.isArray(model.scoreBands) && model.scoreBands.length > 0,
+        `${scale.slug} should expose its configured score bands`,
+      );
+      assert.equal(model.scoreBands.filter((band) => band.active).length, 1, `${scale.slug} should mark its current band`);
+      continue;
+    }
+
+    if (model.mode === "mbti") {
+      assert.equal(model.preferences.length, 4, `${scale.slug} should expose four preference axes`);
+      continue;
+    }
+
+    assert.ok(model.dimensions.length > 0, `${scale.slug} should expose dimensions or scored sections`);
+  }
+});
+
 test("FFMQ demo maps total 114 and five real dimension averages", () => {
   const scale = scaleBySlug("ffmq-39");
   const result = scoreScale(scale, ffmqDemoAnswers(scale));
@@ -77,4 +100,18 @@ test("FFMQ demo maps total 114 and five real dimension averages", () => {
   assert.equal(model.canUseRadar, true);
   assert.deepEqual(model.dimensions.map((item) => item.name), ["观察", "描述", "有意识地行动", "不评判", "不反应"]);
   assert.deepEqual(model.dimensions.map((item) => item.level), ["相对较低", "中间区", "相对较高", "相对较高", "相对较低"]);
+});
+
+test("sum portrait uses the configured scale range instead of a percentile claim", () => {
+  const scale = scaleBySlug("pcl-5");
+  const result = scoreScale(scale, Array.from({ length: 17 }, () => 3));
+  const model = buildReportDashboard(scale, result);
+
+  assert.equal(result.kind, "sum");
+  assert.equal(result.totalScore, 51);
+  assert.equal(model.gauge?.normalized, 0.5);
+  assert.deepEqual(model.metrics[2], { label: "量尺位置", value: "50%", hint: "最低计分 17" });
+  assert.equal(model.scoreBands.find((band) => band.active)?.label, "较高");
+  assert.equal(model.scoreBands[0].end, model.scoreBands[1].start);
+  assert.equal(model.scoreBands[1].end, model.scoreBands[2].start);
 });

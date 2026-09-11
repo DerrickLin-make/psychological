@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, CSSProperties } from "react";
 import {
   Activity,
   BrainCircuit,
@@ -12,6 +12,7 @@ import {
 import type {
   DashboardDimension,
   DashboardGauge,
+  DashboardScoreBand,
   ReportDashboardModel,
 } from "@/lib/report-dashboard";
 
@@ -195,10 +196,67 @@ function DimensionBars({ dimensions }: { dimensions: DashboardDimension[] }) {
   );
 }
 
+function bandRange(band: DashboardScoreBand) {
+  return `${formatScore(band.min)}–${formatScore(band.max)}`;
+}
+
+function ScoreBandPortrait({ model }: { model: ReportDashboardModel }) {
+  const activeBand = model.scoreBands.find((band) => band.active);
+  const marker = Math.min(98, Math.max(2, (model.gauge?.normalized ?? 0) * 100));
+
+  return (
+    <div className="dashboard-score-portrait">
+      <div
+        className="dashboard-band-track"
+        role="img"
+        aria-label={model.scoreBands.map((band) => `${band.label} ${bandRange(band)} 分`).join("；")}
+      >
+        {model.scoreBands.map((band, index) => (
+          <span
+            className={band.active ? "is-active" : undefined}
+            key={band.key}
+            style={{
+              left: `${band.start * 100}%`,
+              width: `${Math.max(1, (band.end - band.start) * 100)}%`,
+              "--band-index": index,
+            } as CSSProperties}
+          />
+        ))}
+        <i className="dashboard-band-marker" style={{ left: `${marker}%` }}>
+          <strong>{model.gauge ? formatScore(model.gauge.value) : "—"}</strong>
+        </i>
+      </div>
+
+      <div className="dashboard-band-labels">
+        {model.scoreBands.map((band) => (
+          <div className={band.active ? "is-active" : undefined} key={band.key}>
+            <span>{band.label}</span>
+            <small>{bandRange(band)}</small>
+          </div>
+        ))}
+      </div>
+
+      {activeBand ? (
+        <div className="dashboard-band-insight">
+          <div>
+            <span>当前画像</span>
+            <strong>{activeBand.label}</strong>
+            <small>{activeBand.emphasis}</small>
+          </div>
+          <p><strong>结果含义</strong>{activeBand.summary}</p>
+          <p><strong>行动方向</strong>{activeBand.recommendation}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ReportDashboard({ model, summary }: { model: ReportDashboardModel; summary: string }) {
   const isFfmq = model.mode === "profile" && model.dimensions.map((item) => item.key).join(",") === "observe,describe,act-aware,nonjudge,nonreact";
   const secondaryTitle = model.mode === "mbti"
     ? "四维偏好分布"
+    : model.scoreBands.length > 0
+      ? "得分区间画像"
     : model.canUseRadar
       ? "维度雷达图"
       : "分项得分对比";
@@ -226,6 +284,8 @@ export function ReportDashboard({ model, summary }: { model: ReportDashboardMode
             <RadarChart dimensions={model.dimensions} midpoint={model.midpoint} />
           ) : model.dimensions.length > 0 ? (
             <DimensionBars dimensions={model.dimensions} />
+          ) : model.scoreBands.length > 0 ? (
+            <ScoreBandPortrait model={model} />
           ) : (
             <div className="dashboard-result-summary"><BrainCircuit size={28} strokeWidth={1.6} /><p>{summary}</p></div>
           )}

@@ -136,3 +136,7 @@ export function ReportSourceNotes({ analysis }: { analysis: Pick<ReportExplanati
     </div>
   );
 }
+
+export function ReportDeclaration({ children }: { children: string }) {
+  return <p className="report-declaration">{children}</p>;
+}

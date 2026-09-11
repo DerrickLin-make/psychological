@@ -4,7 +4,7 @@ import type { RefObject } from "react";
 import type { ScaleDefinition } from "@/data/scales";
 import { ClinicalReport, ReportSection } from "@/components/clinical-report";
 import { ReportDashboard } from "@/components/report-dashboard";
-import { ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
+import { ReportDeclaration, ReportExplanationList, ReportSourceNotes } from "@/components/report-explanations";
 import { buildReportDashboard } from "@/lib/report-dashboard";
 import type { ScaleResult } from "@/lib/scoring";
 import { buildFallbackScaleAnalysis, type ScaleAnalysis } from "@/lib/scale-analysis";
@@ -29,16 +29,17 @@ function resultLabel(scale: ScaleDefinition, result: ScaleResult) {
   return result.label;
 }
 
-function ScoreTable({ result }: { result: ScaleResult }) {
+function ScoreTable({ scale, result }: { scale: ScaleDefinition; result: ScaleResult }) {
   if (result.kind === "sum") {
+    const minimumScore = Math.min(...(scale.bands ?? [result.band]).map((band) => band.min));
     return (
       <div className="table-scroll">
         <table className="report-table">
           <thead><tr><th>指标</th><th>得分</th><th>参考范围</th><th>结果</th></tr></thead>
           <tbody>
-            <tr><th>总分</th><td>{formatScore(result.totalScore)}</td><td>0 ～ {result.maxScore}</td><td>{result.band.label}</td></tr>
+            <tr><th>总分</th><td>{formatScore(result.totalScore)}</td><td>{formatScore(minimumScore)} ～ {result.maxScore}</td><td>{result.band.label}</td></tr>
             {result.rawScore !== undefined ? <tr><th>原始总分</th><td>{formatScore(result.rawScore)}</td><td>原始计分</td><td>已标准化</td></tr> : null}
-            <tr><th>标准化比例</th><td>{Math.round(result.normalized * 100)}%</td><td>0% ～ 100%</td><td>{result.band.emphasis}</td></tr>
+            <tr><th>满分占比</th><td>{Math.round(result.normalized * 100)}%</td><td>总分 ÷ 满分</td><td>{result.band.emphasis}</td></tr>
           </tbody>
         </table>
       </div>
@@ -98,7 +99,7 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
       <ReportDashboard model={dashboard} summary={analysis.overallSummary} />
 
       <ReportSection title="测评得分" eyebrow="数据明细">
-        <ScoreTable result={result} />
+        <ScoreTable scale={scale} result={result} />
       </ReportSection>
 
       <div className="report-lower-grid">
@@ -116,19 +117,17 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
             </div>
           </ReportSection>
 
-          <ReportSection title="安全提示" eyebrow="使用边界">
-            <div className="report-closing-message">
-              <p>{analysis.riskNotice}</p>
-              {analysis.watchPoints.length > 0 ? (
+          {analysis.watchPoints.length > 0 ? (
+            <ReportSection title="重点关注" eyebrow="结果提醒">
+              <div className="report-closing-message">
                 <ul className="report-watch-list">{analysis.watchPoints.map((item) => <li key={item}>{item}</li>)}</ul>
-              ) : null}
-            </div>
-          </ReportSection>
+              </div>
+            </ReportSection>
+          ) : null}
 
           <ReportSection title="寄语" eyebrow="温馨提示">
             <div className="report-closing-message">
               <p>{analysis.closingMessage}</p>
-              <p className="report-risk-notice">{analysis.riskNotice}</p>
             </div>
           </ReportSection>
         </div>
@@ -149,6 +148,10 @@ export function ScaleReport({ scale, result, completedAt, elapsedSeconds, report
           {scale.sourceNote ? <p>{scale.sourceNote}</p> : null}
           <ReportSourceNotes analysis={analysis} />
         </div>
+      </ReportSection>
+
+      <ReportSection title="声明" eyebrow="报告边界">
+        <ReportDeclaration>{`${analysis.riskNotice} 如当前困扰持续、加重、明显影响生活功能，或存在伤害自己、伤害他人的紧迫风险，请及时联系专业机构或当地紧急援助。`}</ReportDeclaration>
       </ReportSection>
     </ClinicalReport>
   );
