@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   BrainCircuit,
-  ClipboardList,
   Clock3,
   Download,
   FileChartColumn,
@@ -85,7 +84,7 @@ export function ReportSection({
   );
 }
 
-function Sidebar({ scaleSlug }: { scaleSlug: string }) {
+function Sidebar() {
   return (
     <aside className="report-sidebar">
       <div className="report-brand">
@@ -101,10 +100,6 @@ function Sidebar({ scaleSlug }: { scaleSlug: string }) {
           <LayoutDashboard size={17} strokeWidth={1.8} />
           <span>报告概览</span>
         </a>
-        <Link className="report-nav-item" href={`/scales/${scaleSlug}`}>
-          <ClipboardList size={17} strokeWidth={1.8} />
-          <span>测评详情</span>
-        </Link>
         <Link className="report-nav-item" href="/">
           <Home size={17} strokeWidth={1.8} />
           <span>返回首页</span>
@@ -139,7 +134,7 @@ export function ClinicalReport({
 }: ClinicalReportProps) {
   return (
     <div ref={reportRef} className="clinical-report" id="report">
-      <Sidebar scaleSlug={scaleSlug} />
+      <Sidebar />
 
       <div className="report-workspace">
         <div className="report-toolbar">

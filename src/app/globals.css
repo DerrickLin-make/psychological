@@ -2933,6 +2933,38 @@ button:disabled {
     font-size: 0.75rem;
   }
 
+  .question-rail {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem 0.75rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .question-rail .page-eyebrow {
+    grid-column: 1;
+    align-self: center;
+  }
+
+  .question-rail strong {
+    grid-column: 2;
+    justify-self: end;
+    font-size: 1.4rem;
+    letter-spacing: -0.03em;
+  }
+
+  .question-rail .question-rail-copy {
+    grid-column: 1 / -1;
+    min-width: 0;
+    color: var(--body-text);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    overflow-wrap: normal;
+    word-break: normal;
+    writing-mode: horizontal-tb;
+  }
+
   .question-layout {
     padding-top: 2rem;
     padding-bottom: 1rem;

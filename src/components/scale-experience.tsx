@@ -314,7 +314,7 @@ export function ScaleExperience({ scale }: ScaleExperienceProps) {
             <aside className="question-rail">
               <p className="page-eyebrow">答题进度</p>
               <strong>{Math.round(((currentIndex + 1) / totalQuestions) * 100)}%</strong>
-              <p>请根据最近一段时间的真实感受作答。</p>
+              <p className="question-rail-copy">请根据最近一段时间的真实感受作答。</p>
               <p role="status">
                 {draftRestored ? "已恢复当前标签页中的临时答题进度。" : null}
                 进度仅临时保存在当前标签页；刷新后可继续。共享设备使用后请关闭标签页清除。
